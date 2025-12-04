@@ -1,5 +1,5 @@
 /*
-name: sram_model
+name: sram_tb_model
 Description: 
 - Single port ram model for TB
 - No implementation of multi-cycle access
@@ -24,18 +24,28 @@ module sram_model #(
     output logic [DATA_WIDTH-1:0] rdat
 );
 
-bit [DATA_WIDTH-1:0] ram [2**ADDR_WIDTH]; 
+bit [DATA_WIDTH-1:0] ram [2**ADDR_WIDTH];
+
+////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
+// Registering old write, old addr
+logic [ADDR_WIDTH-1:0] addr_prev;
+logic wen_prev;
+
+// RAW Handler
+if (RAM_IS_SYNCHRONOUS) begin
+    always_ff @(posedge ramclk) begin
+        // Registering
+        addr_prev <= addr;
+        wen_prev <= wen;
+    end
+end
+////    ////    ////    ////    ////    ////    ////    ////    ////    ////  
 
 ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
 // WRITE
-generate
-    if (RAM_IS_SYNCHRONOUS)
-        always_ff @(posedge ramclk) begin : WRITE_SYNC
-            if (wen) ram[addr] <= wdat;
-        end
-    else 
-        if (wen) assign ram[addr] = wdat;
-endgenerate
+always_ff @(posedge ramclk) begin : WRITE
+    if (wen) ram[addr] <= wdat;
+end
 
 // READ
 generate
@@ -60,14 +70,17 @@ localparam IMG_PX_PER_LINE = DATA_WIDTH / IMG_COLOR_DEPTH;          // single ch
 
 function memdump_img(input string fname, input int xdim, ydim);
     int line_idx, px_in_line_idx;
-    bit [IMG_COLOR_DEPTH-1:0] out;  
+    bit [IMG_COLOR_DEPTH-1:0] out;
+
     for (int y = 0; y < ydim; y++) begin
         for (int x = 0; x < xdim; x++) begin
-            line_idx = (y * xdim + x) / IMG_PX_PER_LINE;
-            px_in_line_idx = (y * xdim + x) % IMG_PX_PER_LINE;
-            out = ram[line_idx][IMG_PX_PER_LINE * px_in_line_idx +: IMG_PX_PER_LINE];
-            $display("%d %d %x", x, y, out);
-        end    
+
+            line_idx      = (y*xdim + x) / IMG_PX_PER_LINE;
+            px_in_line_idx= (y*xdim + x) % IMG_PX_PER_LINE;
+            out = ram[line_idx][IMG_COLOR_DEPTH*px_in_line_idx +: IMG_COLOR_DEPTH];
+            $display("%0d %0d %0h", x, y, out);
+            
+        end
     end
 endfunction
 ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    
