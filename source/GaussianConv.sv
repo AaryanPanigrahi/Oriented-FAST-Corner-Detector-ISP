@@ -1,45 +1,47 @@
 `timescale 1ns / 10ps
 
-module FlexCounter #(
-    parameter SIZE = 4 // Number of bits available to store the count
-) (
-    input logic clk, // Maximum operating frequency = 100 MHz
-    input logic n_rst, // asynchronous, active-low system reset
-    input logic clear, // synchronous, active-high sinal to clear count value back to 0
-    input logic count_enable, // active-high enable signal to allow the counter to increment
-    input logic [SIZE-1:0] rollover_val, // Determines when to roll over
-    output logic [SIZE-1:0] count_out, // The current count value stored in the counter
-    output logic rollover_flag // active-high flag, asserted when the counter is at the rollover value
+module GaussianConv #(
+    parameter [3:0] KERNEL_SIZE = 4'd3
+)(
+    input logic clk, n_rst,
+    input logic [8:0] x_pos, y_pos,
+    input logic [2:0] sigma,
+    input logic [KERNEL_SIZE-1:0][KERNEL_SIZE-1:0][7:0] input_buffer,
+    input logic start_conv, 
+    input logic [1:0] next_dir,
+    output logic [7:0] blurred_pixel,
+    output logic err
+    output logic blur_complete
 );
-    const logic [SIZE-2:0] zeros = '0;
-    // always_comb begin 
-    //     if (count_out >= rollover_val) rollover_flag = 1'b1;
-    //     else rollover_flag = 1'b0;
-    // end
+logic [KERNEL_SIZE-1:0][KERNEL_SIZE-1:0][7:0] kernel, input_matrix;
+logic done, prop_ready, kernel_start;
 
-    always_ff @(posedge clk, negedge n_rst) begin
-        if (~n_rst) begin 
-            count_out <= '0; // Async counter reset
-            rollover_flag <= 1'b0; // Async flag reset
-        end
-        else if (clear) begin
-            count_out <= '0; // Synchronous clear
-            rollover_flag <= 1'b0; end
-        else if (count_enable) begin
-            if ((count_out + 1'b1) == rollover_val) begin 
-                rollover_flag <= 1'b1;  
-                count_out <= count_out + 1'b1; // Counter increment
-            end
-            else if (count_out >= rollover_val) begin
-                count_out <= '0; // Rollover state
-                //rollover_flag <= 1'b1;
-                rollover_flag <= 1'b0;
-            end 
-            else begin 
-                rollover_flag <= 1'b0;
-                count_out <= count_out + 1'b1; // Counter increment
-            end
-        end
-    end
+always_comb kernel_start = (prop_ready || start_conv); // Indicates when to begin next kernel comp
+
+CreateKernel #(.SIZE(KERNEL_SIZE)) get_kernel (
+    .clk(clk),
+    .n_rst(n_rst),
+    .sigma(sigma),
+    .start(start_conv),
+    .kernel(kernel),
+    .err(err));
+
+PropogateBuffer #(.SIZE(KERNEL_SIZE)) shift_buffer (
+    .clk(clk),
+    .n_rst(n_rst),
+    .input_buffer(input_buffer),
+    .next_dir(next_dir),
+    .done(pixel_ready),
+    .input_matrix(input_matrix)
+    .ready(prop_ready));
+
+ComputeKernel #(.SIZE(KERNEL_SIZE)) pixel_blur (
+    .clk(clk),
+    .n_rst(n_rst),
+    .kernel(kernel),
+    .start(kernel_start),
+    .input_matrix(input_matrix),
+    .done(blur_complete),
+    .blurred_pixel(blurred_pixel));
+
 endmodule
-
