@@ -9,11 +9,11 @@ module pixel_pos #(
     input logic update_pos, new_trans,
     input logic [$clog2(X_MAX) - 1:0] max_x,
     input logic [$clog2(Y_MAX) - 1:0] max_y,
-    output logic end_pos, next_dir,
+    output logic end_pos,
+    output logic [1:0] next_dir,
     output logic [$clog2(X_MAX) - 1:0] curr_x, 
     output logic [$clog2(Y_MAX) - 1:0] curr_y
 );
-    //input logic [1:0] dir;
 
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    
     // Previous Value updates
@@ -89,22 +89,7 @@ module pixel_pos #(
 
     assign max_x_eff = max_x - 1;
     assign max_y_eff = max_y - 1;
-    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////   
-
-    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
-    logic end_x, end_y;
-
-    always_comb begin : END_DATA
-        end_x = (max_x_eff == curr_x);
-        end_y = (max_y_eff == curr_y);
-
-        end_pos = end_x && end_y;
-    end
-
-    always_comb begin : DIRECTION_INFO
-        next_dir = y_update;
-    end
-    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
+    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    
 
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
     logic corr_clear;
@@ -125,6 +110,21 @@ module pixel_pos #(
                             (.clk(clk), .n_rst(n_rst),
                             .count_enable(y_update), .wrap_val(max_y_eff), .mode(Y_MODE), .clear(corr_clear),
                             .count_out(curr_y), .wrap_flag(), .rollover_flag());
+    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
+
+    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
+    logic end_x, end_y;
+
+    always_comb begin : END_DATA
+        end_x = (max_x_eff == curr_x);
+        end_y = (max_y_eff == curr_y);
+
+        end_pos = end_x && end_y;
+    end
+
+    always_comb begin : DIRECTION_INFO
+        next_dir = {y_update, X_CORR.dir_next};
+    end
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
 
 endmodule
