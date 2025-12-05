@@ -8,7 +8,8 @@ module tb_pixel_pos;
     logic update_pos, new_trans;
     logic [$clog2(X_MAX) - 1:0] max_x;
     logic [$clog2(Y_MAX) - 1:0] max_y;
-    logic end_pos, next_dir;
+    logic end_pos;
+    logic [1:0] next_dir;
     logic [$clog2(X_MAX) - 1:0] curr_x;
     logic [$clog2(Y_MAX) - 1:0] curr_y;
 
@@ -29,6 +30,22 @@ module tb_pixel_pos;
     // Clk Gen
     initial clk = 0;
     always #5 clk = ~clk;
+
+    typedef enum bit [1:0] {
+        IDLE, RIGHT, LEFT, DOWN
+    } DIRECTION;
+
+    DIRECTION next_move = IDLE;
+
+    always @(posedge clk) begin
+        case (next_dir)
+            2'b00: next_move = RIGHT;
+            2'b01: next_move = LEFT;
+            2'b10: next_move = DOWN;
+            2'b11: next_move = DOWN;
+            default: next_move = IDLE;
+        endcase
+    end
 
     // Aux
     task wait_time(input int wait_t);
