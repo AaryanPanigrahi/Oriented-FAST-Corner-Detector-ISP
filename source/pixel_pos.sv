@@ -43,43 +43,56 @@ module pixel_pos #(
     end
 
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
-    logic new_trans_prev, new_trans_prev_exp;
+    logic new_trans_prev, new_trans_prev_exp, new_trans_info;
+    assign new_trans_info = new_trans || new_trans_prev;
 
     always_ff @(posedge clk, negedge n_rst) begin : UPDATE_TRANS_PREV
-        if (!n_rst) begin
+        if (!n_rst) 
             new_trans_prev  <= 0;
-        end
 
-        else begin
-            new_trans_prev  <= new_trans_prev_exp;
-        end
+        else
+            new_trans_prev  <= (new_trans || new_trans_prev_exp);
     end
 
     always_comb begin : UPDATE_TRANS_PREV_EXP
-        new_trans_prev_exp  = new_trans_prev;
+        new_trans_prev_exp = new_trans_prev;
 
-        if (update_pos) begin
-            new_trans_prev_exp  = new_trans;
-        end
+        if (update_pos)
+            new_trans_prev_exp = new_trans;
     end
 
-    logic new_trans_info;
-    assign new_trans_info = new_trans || new_trans_prev;
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    
 
-    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    
-    logic new_flag, old_flag;
+    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////  
+    logic new_flag;
+    assign new_flag = wrap_flag || rollover_flag;
 
-    always_comb begin : FLAG_INFO
-        new_flag = wrap_flag || rollover_flag;
-        old_flag = wrap_flag_prev || rollover_flag_prev;
+    logic y_update_flag;
+    logic y_update_flag_keep;
+
+    always_ff @(posedge clk, negedge n_rst) begin
+        if (!n_rst)
+            y_update_flag_keep <= 0;
+        else
+            y_update_flag_keep <= y_update_flag;
+    end
+
+        always_comb begin : FLAG_INFO
+        y_update_flag = y_update_flag_keep;
+
+        if (new_trans_info)
+            y_update_flag = 0;
+        else if (!y_update_flag_keep && new_flag && update_pos)
+            y_update_flag = 1;
+        else if (y_update_flag_keep && update_pos)
+            y_update_flag = 0;
     end
 
     logic y_update, x_update;
 
     always_comb begin : MODULE_UPDATES
-        y_update = update_pos && (new_flag && !old_flag) && !new_trans_info;
-        x_update = update_pos && (new_trans_info || !(new_flag && !old_flag));
+        y_update = update_pos && (y_update_flag);
+        x_update = update_pos && (!y_update_flag || new_trans);
     end
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
 
@@ -94,7 +107,7 @@ module pixel_pos #(
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
     logic corr_clear;
 
-    assign corr_clear = new_trans || end_pos; 
+    assign corr_clear = new_trans || (end_pos && update_pos); 
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
 
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
@@ -122,8 +135,20 @@ module pixel_pos #(
         end_pos = end_x && end_y;
     end
 
+    logic x_dir, y_dir;
+    logic dir_reg;
+
+    always_ff @(posedge clk or negedge n_rst) begin
+        if (!n_rst) dir_reg <= 1'b0;
+        else if (rollover_flag) dir_reg <= 1'b0;
+        else if (wrap_flag) dir_reg <= 1'b1;
+    end
+
     always_comb begin : DIRECTION_INFO
-        next_dir = {y_update, X_CORR.dir_next};
+            y_dir = new_flag && !y_update_flag_keep && !new_trans_prev;
+            x_dir = (wrap_flag || dir_reg) && !(rollover_flag);
+
+        next_dir = {y_dir, x_dir};
     end
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
 
