@@ -1,8 +1,8 @@
 `timescale 1ns / 10ps
 
 module tb_pixel_pos;
-    parameter X_MAX = 7;
-    parameter Y_MAX = 8;
+    parameter X_MAX = 300;
+    parameter Y_MAX = 300;
 
     logic clk, n_rst;
     logic update_pos, new_trans;
@@ -50,7 +50,7 @@ module tb_pixel_pos;
     // Aux
     task wait_time(input int wait_t);
         begin
-            repeat(wait_t) @(negedge clk);
+            repeat(wait_t) @(posedge clk);
         end
     endtask
 
@@ -86,6 +86,22 @@ module tb_pixel_pos;
         end
     endtask
 
+    int i;
+
+    task automatic update_strobe (input int rep,
+                        input int delay);
+    begin
+        for (i = 0; i < rep; i++) begin
+            @(posedge clk);
+            update_pos = 0;
+
+            wait_time(delay);
+            update_pos = 1;
+        end
+        update_pos = 0;
+    end
+    endtask
+
     // Main test
     initial begin
         init();
@@ -93,26 +109,24 @@ module tb_pixel_pos;
         // Test 1
         max_x = 5;
         max_y = 5;
-        new_trans = 1;
         update_pos = 1;
+        new_trans = 1;
         @(negedge clk);
         new_trans = 0;
 
-        wait_time(5 * 5 + 5);
-        update_pos = 0;
+        update_strobe(max_x * max_y, 4);
 
         wait_ten;
 
         // Test 2
-        max_x = 240;
-        max_y = 240;
+        max_x = 10;
+        max_y = 10;
         new_trans = 1;
         update_pos = 1;
         @(negedge clk);
         new_trans = 0;
 
-        wait_time(240 * 240 + 5);
-        update_pos = 0;
+        wait_time(max_x * max_y);
 
         // Finish
         wait_ten;
