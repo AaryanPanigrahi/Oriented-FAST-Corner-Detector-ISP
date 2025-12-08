@@ -1,0 +1,136 @@
+// `timescale 1ns / 10ps
+// /* verilator coverage_off */
+
+// module tb_CreateKernel ();
+
+//     localparam CLK_PERIOD = 10ns;
+
+//     initial begin
+//         $dumpfile("waveform.vcd");
+//         $dumpvars;
+//     end
+
+//     parameter [3:0] SIZE = 4'd3;
+//     logic clk, n_rst;
+//     logic [2:0] sigma;
+//     logic start, err;
+//     logic [SIZE-1:0][SIZE-1:0][7:0] kernel;
+
+//     // clockgen
+//     always begin
+//         clk = 0;
+//         #(CLK_PERIOD / 2.0);
+//         clk = 1;
+//         #(CLK_PERIOD / 2.0);
+//     end
+
+//     task reset_dut;
+//     begin
+//         n_rst = 0;
+//         sigma = '0;
+//         start = '0;
+//         @(posedge clk);
+//         @(posedge clk);
+//         @(negedge clk);
+//         n_rst = 1;
+//         @(posedge clk);
+//         @(posedge clk);
+//     end
+//     endtask
+
+//     task build;
+//     begin
+//         start = 1'b1;
+//         @(negedge clk);
+//         start = 1'b0;
+//         repeat (25) @(negedge clk);
+//     end
+//     endtask
+
+//     CreateKernel #(.SIZE(SIZE)) DUT (
+//         .clk(clk), .n_rst(n_rst),
+//         .sigma(sigma), .start(start),
+//         .kernel(kernel),
+//         .err(err));
+
+//     initial begin
+//         n_rst = 1;
+//         reset_dut;
+
+//         sigma = 3'd2;
+//         build();
+
+//         $finish;
+//     end
+// endmodule
+
+// /* verilator coverage_on */
+
+`timescale 1ns / 10ps
+/* verilator coverage_off */
+
+module tb_CreateKernel ();
+
+    localparam CLK_PERIOD = 10ns;
+
+    initial begin
+        $dumpfile("waveform.vcd");
+        $dumpvars;
+    end
+
+    parameter [3:0] SIZE = 4'd7;
+    logic clk, n_rst;
+    logic [2:0] sigma;
+    logic start, err;
+    logic [SIZE-1:0][SIZE-1:0][7:0] kernel;
+
+    // clockgen
+    always begin
+        clk = 0;
+        #(CLK_PERIOD / 2.0);
+        clk = 1;
+        #(CLK_PERIOD / 2.0);
+    end
+
+    task reset_dut;
+    begin
+        n_rst = 0;
+        sigma = '0;
+        start = '0;
+        @(posedge clk);
+        @(posedge clk);
+        @(negedge clk);
+        n_rst = 1;
+        @(posedge clk);
+        @(posedge clk);
+    end
+    endtask
+
+    task build;
+    begin
+        start = 1'b1;
+        @(negedge clk);
+        start = 1'b0;
+        repeat (200) @(negedge clk);
+    end
+    endtask
+
+    CreateKernel #(.SIZE(SIZE)) DUT (
+        .clk(clk), .n_rst(n_rst),
+        .sigma(sigma), .start(start),
+        .kernel(kernel),
+        .err(err));
+
+    initial begin
+        n_rst = 1;
+        reset_dut;
+
+        sigma = 3'd2;
+        build();
+
+        $finish;
+    end
+endmodule
+
+/* verilator coverage_on */
+
