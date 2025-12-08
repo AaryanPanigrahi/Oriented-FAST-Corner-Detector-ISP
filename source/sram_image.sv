@@ -6,8 +6,8 @@ module sram_image #(
     Y_MAX = 5
 ) (
     input logic ramclk, 
-    input logic [$clog2(X_MAX) - 1:0] x_addr,
-    input logic [$clog2(Y_MAX) - 1:0] y_addr,
+    input logic [$clog2(X_MAX):0] x_addr,
+    input logic [$clog2(Y_MAX):0] y_addr,
     input logic wen, ren,
     input logic [PIXEL_DEPTH-1:0] wdat,
     output logic [PIXEL_DEPTH-1:0] rdat
