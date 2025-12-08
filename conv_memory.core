@@ -26,6 +26,8 @@ filesets:
             - "source/sram_model.sv"
             - "source/pixel_pos.sv"
 
+            - "image/test_5x5.hex":    { file_type: user }
+            - "image/test_9x9.hex":    { file_type: user }
             - "image/test_16x16.hex":    { file_type: user }  
             - "image/test_200x200.hex":    { file_type: user } 
         file_type: systemVerilogSource
