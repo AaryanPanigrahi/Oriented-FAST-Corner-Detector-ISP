@@ -174,29 +174,25 @@ module conv_memory #(
 
     ////    ////    ////    ////    ////    ////
     // Latch on to final count - clear when new req
-    logic new_sample_ready_int, new_sample_ready_w;       // Wires
+    logic new_sample_ready_w;       // Wires
+    logic new_sample_req_prev, new_sample_req_info;
+    assign new_sample_req_info = new_sample_req_prev || new_sample_req;
 
     always_ff @(posedge clk, negedge n_rst) begin : SAMPLE_READY_FF
         if (!n_rst) begin
-            new_sample_ready_int    <= 0;
             new_sample_ready        <= 0;
         end
         
         // One after rollover flag
         else begin
-            new_sample_ready_int    <= new_sample_ready_w && !new_sample_req;
-            new_sample_ready        <= new_sample_ready_int;
+            new_sample_ready        <= new_sample_ready_w;
         end
     end
-
-    logic new_sample_req_prev, new_sample_req_info;
-    assign new_sample_req_info = new_sample_req_prev || new_sample_req;
 
     always_ff @(posedge clk, negedge n_rst) begin
         if (!n_rst) new_sample_req_prev <= 0;
         else        new_sample_req_prev <= new_sample_req;
     end
-
 
     always_comb begin : NEW_SAMPLE_TRACKER
         new_sample_ready_w  = wrap_flag && !first_trans_flag;
@@ -269,7 +265,7 @@ module conv_memory #(
 
         else begin
             sample_updater_int      <= !new_sample_ready_w;
-            sample_updater          <= (sample_updater_int && !new_sample_ready_int && !first_trans_flag_prev);
+            sample_updater          <= (sample_updater_int && !new_sample_ready && !first_trans_flag_prev);
         end
     end
     ////    ////    ////    ////    ////    ////
