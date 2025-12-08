@@ -3,6 +3,7 @@
 module tb_pixel_pos;
     parameter X_MAX = 300;
     parameter Y_MAX = 300;
+    parameter MODE = 1;
 
     logic clk, n_rst;
     logic update_pos, new_trans;
@@ -14,7 +15,7 @@ module tb_pixel_pos;
     logic [$clog2(Y_MAX) - 1:0] curr_y;
 
     // Instantiate DUT
-    pixel_pos #(.X_MAX(X_MAX), .Y_MAX(Y_MAX)) dut (
+    pixel_pos #(.X_MAX(X_MAX), .Y_MAX(Y_MAX), .MODE(MODE)) dut (
         .clk(clk),
         .n_rst(n_rst),
         .update_pos(update_pos),
@@ -50,7 +51,8 @@ module tb_pixel_pos;
     // Aux
     task wait_time(input int wait_t);
         begin
-            repeat(wait_t) @(posedge clk);
+            if (wait_t)
+                repeat(wait_t) @(posedge clk);
         end
     endtask
 
@@ -91,7 +93,7 @@ module tb_pixel_pos;
     task automatic update_strobe (input int rep,
                         input int delay);
     begin
-        for (i = 0; i < rep; i++) begin
+        for (i = 0; i <= rep; i++) begin
             @(posedge clk);
             update_pos = 0;
 
@@ -109,7 +111,6 @@ module tb_pixel_pos;
         // Test 1
         max_x = 5;
         max_y = 5;
-        update_pos = 1;
         new_trans = 1;
         @(negedge clk);
         new_trans = 0;
@@ -122,12 +123,11 @@ module tb_pixel_pos;
         max_x = 10;
         max_y = 10;
         new_trans = 1;
-        update_pos = 1;
         @(negedge clk);
         new_trans = 0;
 
-        wait_time(max_x * max_y);
-
+        update_strobe(max_x * max_y, 0);
+        
         // Finish
         wait_ten;
         $finish();
