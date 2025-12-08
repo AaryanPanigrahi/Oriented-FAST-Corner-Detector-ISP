@@ -13,8 +13,8 @@ module tb_conv_memory;
     logic clk, n_rst;
 
     // getting from image SRAM
-    logic [$clog2(X_MAX) - 1:0] x_addr_img;
-    logic [$clog2(Y_MAX) - 1:0] y_addr_img;
+    logic [$clog2(X_MAX):0] x_addr_img;
+    logic [$clog2(Y_MAX):0] y_addr_img;
     logic ren_img;
     logic [PIXEL_DEPTH-1:0] rdat_img;
 
@@ -28,8 +28,8 @@ module tb_conv_memory;
 
     // from gaussian conv
     logic new_sample_req;
-
     logic new_trans;
+
     logic [$clog2(X_MAX) - 1:0] max_x;
     logic [$clog2(Y_MAX) - 1:0] max_y;
 
@@ -37,9 +37,12 @@ module tb_conv_memory;
     logic new_sample_ready;
     logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0] [PIXEL_DEPTH - 1:0] working_memory;
 
-    // Signals
-    logic [PIXEL_DEPTH-1:0]     wdat;
-    logic                       wen;
+    // Custom
+    logic [PIXEL_DEPTH-1:0]     first, last, top_right, bottom_left;
+    assign first = working_memory[0][0][7:0];
+    assign last = working_memory[kernel_size - 1][kernel_size - 1][7:0]; 
+    assign top_right =  working_memory[kernel_size - 1][0][7:0];
+    assign bottom_left =  working_memory[0][kernel_size - 1][7:0];
 
     // DUT
     sram_image #(
@@ -50,8 +53,8 @@ module tb_conv_memory;
         .ramclk (clk),
         .x_addr   (x_addr_img),
         .y_addr   (y_addr_img),
-        .wdat   (wdat),
-        .wen    (wen),
+        .wdat   (8'd0),
+        .wen    (0),
         .ren    (ren_img),
         .rdat   (rdat_img)
     );
@@ -162,27 +165,54 @@ module tb_conv_memory;
     end
     endtask
 
-    task init;
-    begin
-        n_rst = 1;
-        new_trans = 0;
+    ////    ////    ////    ////    ////    ////    ////
+    // ONLY FOR TESTING //
+    logic [$clog2(X_MAX):0] x_addr_test;
+    logic [$clog2(Y_MAX):0] y_addr_test;
+    logic ren_test;
+    logic [PIXEL_DEPTH-1:0] rdat_test;
 
-        // Default values
-        kernel_size     = 8'd1;                    // e.g., 5x5 kernel
-        new_sample_req  = 1'b0;
-        wen = 0;
-        wdat = 0;
+    sram_image #(
+        .PIXEL_DEPTH(PIXEL_DEPTH),
+        .X_MAX(X_MAX),
+        .Y_MAX(Y_MAX)
+    ) IMAGE_RAM2 (
+        .ramclk (clk),
+        .x_addr   (x_addr_test),
+        .y_addr   (y_addr_test),
+        .wdat   (8'd0),
+        .wen    (0),
+        .ren    (ren_test),
+        .rdat   (rdat_test)
+    );
 
-        max_x = 4;
-        max_y = 4;
-
-        reset_dut;
-    end
+    task automatic do_read(input logic [$clog2(X_MAX):0] x,
+                           input logic [$clog2(Y_MAX):0] y);
+        @(posedge clk);
+        x_addr_test <= x;
+        y_addr_test <= y;
+        ren_test  <= 1;
     endtask
 
-    task automatic run_conv(input logic [$clog2(X_MAX)-1:0] x_dim,
-                           input logic [$clog2(Y_MAX)-1:0] y_dim,
-                           input logic [$clog2(MAX_KERNAL)-1:0] k_size);
+    task automatic do_read_range(input logic [$clog2(X_MAX):0] x_int,
+                                input logic [$clog2(X_MAX):0] x_end,
+                                input logic [$clog2(X_MAX):0] y_int,
+                                input logic [$clog2(Y_MAX):0] y_end);
+        logic [$clog2(X_MAX):0] x_idx;
+        logic [$clog2(X_MAX):0] y_idx;
+
+        for (y_idx = y_int; y_idx < y_end; y_idx++) begin
+            for (x_idx = x_int; x_idx < x_end; x_idx++) begin
+                do_read(x_idx, y_idx);
+            end
+        end
+        ren_test <= 0;
+    endtask
+    ////    ////    ////    ////    ////    ////    //// 
+
+    task automatic run_conv(input logic [$clog2(X_MAX):0] x_dim,
+                           input logic [$clog2(Y_MAX):0] y_dim,
+                           input logic [$clog2(MAX_KERNAL):0] k_size);
     begin
         kernel_size = k_size;
         max_x = x_dim;
@@ -191,23 +221,67 @@ module tb_conv_memory;
         // New Trans
         reset_trans;
 
-        for (int idx = 0; idx < (x_dim - 1) * (y_dim - 1); idx++) begin
+        // First Trans
+        wait_time((k_size * k_size) + (k_size ** 2) + 10);
+        req_new_sam;
+
+        // Rest of transaction
+        for (int idx = 0; idx < (x_dim) * (y_dim); idx++) begin
             wait_time(k_size ** 2);
 
             req_new_sam;
         end
-
     end
     endtask
 
-    // Simple stimulus
+    task init;
+    begin
+        n_rst = 1;
+        new_trans = 0;
+
+        // Default values
+        kernel_size     = 8'd1;                   
+        new_sample_req  = 1'b0;
+
+        max_x = 4;
+        max_y = 4;
+
+        // Test SRAM
+        x_addr_test <= 0;
+        y_addr_test <= 0;
+        ren_test <= 0;
+
+        reset_dut;
+    end
+    endtask
+
+    // Testbench
     initial begin
         init;
 
-        // Preload Mem
-        IMAGE_RAM.load_img("image/test_16x16.hex", 200, 200);
+        // Check SRAM working
+        IMAGE_RAM2.load_img("image/test_5x5.hex", 5, 5);
         wait_time (2);
-        run_conv(6, 6, 3);
+        do_read_range(0, 5, 0, 5);
+
+        // Preload Mem
+        IMAGE_RAM.load_img("image/test_5x5.hex", 5, 5);
+        wait_time (2);
+        run_conv(5, 5, 3);
+
+        wait_fifty;
+
+        // Preload Mem
+        IMAGE_RAM.load_img("image/test_9x9.hex", 9, 9);
+        wait_time (2);
+        run_conv(9, 9, 3);
+
+        wait_fifty;
+
+        // Preload Mem
+        IMAGE_RAM.load_img("image/test_16x16.hex", 16, 16);
+        wait_time (2);
+        run_conv(16, 16, 3);
 
         wait_fifty;
 
@@ -219,14 +293,5 @@ module tb_conv_memory;
         wait_time(300);   
 
         $finish;
-    end
-
-    // Simple monitor to see activity
-    initial begin
-        $display("Time  req  ready  dir  curr_x curr_y  x_addr y_addr rdat");
-        $monitor("%0t     %0b    %0b     %0d   %0d     %0d     %0d     %0d     0x%0h",
-                 $time, new_sample_req, new_sample_ready,
-                 next_dir, curr_x, curr_y,
-                 x_addr_img, y_addr_img, rdat_img);
     end
 endmodule
