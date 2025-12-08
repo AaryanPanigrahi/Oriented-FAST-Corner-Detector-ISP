@@ -1,27 +1,26 @@
 CAPI=2:
-name: "u337mg005:ece337:InitKernel:1.0.0"
+name: "u337mg005:ece337:KernelAccumulator:1.0.0"
 description: ""
 
 filesets:
     rtl:
         files:
-            - "source/InitKernel.sv"
+            - "source/KernelAccumulator.sv"
         file_type: systemVerilogSource
         # depend:
         #     - "fusesoc:core:name"
-        depend:
-            - "u337mg005:ece337:FlexCounter"
+
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg005:ece337:InitKernel_syn"
+            - "u337mg005:ece337:KernelAccumulator_syn"
 
     tb:
         files:
-            - "testbench/tb_InitKernel.sv"
-            - "waves/InitKernel.do": { file_type: user }
-            - "waves/InitKernel.gtkw": { file_type: user }
+            - "testbench/tb_KernelAccumulator.sv"
+            - "waves/KernelAccumulator.do": { file_type: user }
+            - "waves/KernelAccumulator.gtkw": { file_type: user }
             # - "data/file.txt": { file_type: user }
         file_type: systemVerilogSource
 
@@ -33,21 +32,21 @@ targets:
     default: &default
         filesets:
             - rtl
-        toplevel: InitKernel
+        toplevel: KernelAccumulator
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_InitKernel
+        toplevel: tb_KernelAccumulator
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/InitKernel.do
+                    - -do waves/KernelAccumulator.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -80,7 +79,7 @@ targets:
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: InitKernel
+        toplevel: KernelAccumulator
         tools:
             design_compiler:
                 script_dir: "src/u337mg005_ece337_synfiles_0"
