@@ -185,7 +185,7 @@ module conv_memory #(
         
         // One after rollover flag
         else begin
-            new_sample_ready        <= new_sample_ready_w;
+            new_sample_ready        <= new_sample_ready_w && !new_trans;
         end
     end
 
