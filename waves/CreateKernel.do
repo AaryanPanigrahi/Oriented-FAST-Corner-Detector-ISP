@@ -1,0 +1,45 @@
+onerror {resume}
+quietly WaveActivateNextPane {} 0
+add wave -noupdate -color Gray65 -radix decimal /tb_CreateKernel/clk
+add wave -noupdate -color Gray65 -radix decimal /tb_CreateKernel/n_rst
+add wave -noupdate -radix decimal /tb_CreateKernel/sigma
+add wave -noupdate -radix decimal /tb_CreateKernel/start
+add wave -noupdate -radix decimal /tb_CreateKernel/err
+add wave -noupdate -radix binary -childformat {{{/tb_CreateKernel/kernel[2]} -radix binary -childformat {{{[2]} -radix binary} {{[1]} -radix binary} {{[0]} -radix binary}}} {{/tb_CreateKernel/kernel[1]} -radix binary -childformat {{{[2]} -radix binary} {{[1]} -radix binary} {{[0]} -radix binary}}} {{/tb_CreateKernel/kernel[0]} -radix binary -childformat {{{[2]} -radix binary} {{[1]} -radix binary} {{[0]} -radix binary}}}} -expand -subitemconfig {{/tb_CreateKernel/kernel[2]} {-height 16 -radix binary -childformat {{{[2]} -radix binary} {{[1]} -radix binary} {{[0]} -radix binary}} -expand} {/tb_CreateKernel/kernel[2][2]} {-radix binary} {/tb_CreateKernel/kernel[2][1]} {-radix binary} {/tb_CreateKernel/kernel[2][0]} {-radix binary} {/tb_CreateKernel/kernel[1]} {-height 16 -radix binary -childformat {{{[2]} -radix binary} {{[1]} -radix binary} {{[0]} -radix binary}} -expand} {/tb_CreateKernel/kernel[1][2]} {-radix binary} {/tb_CreateKernel/kernel[1][1]} {-radix binary} {/tb_CreateKernel/kernel[1][0]} {-radix binary} {/tb_CreateKernel/kernel[0]} {-height 16 -radix binary -childformat {{{[2]} -radix binary} {{[1]} -radix binary} {{[0]} -radix binary}} -expand} {/tb_CreateKernel/kernel[0][2]} {-radix binary} {/tb_CreateKernel/kernel[0][1]} {-radix binary} {/tb_CreateKernel/kernel[0][0]} {-radix binary}} /tb_CreateKernel/kernel
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/clk
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/n_rst
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/sigma
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/start
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/kernel
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/err
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/end_row
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/end_column
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/cur_x
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/cur_y
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/numerator
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/quotient
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/sum
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/start_nn
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/done
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/nextDone
+add wave -noupdate -expand -group {Module Signals} -radix decimal -childformat {{{/tb_CreateKernel/DUT/nnKernel[2]} -radix decimal -childformat {{{[2]} -radix decimal} {{[1]} -radix decimal} {{[0]} -radix decimal}}} {{/tb_CreateKernel/DUT/nnKernel[1]} -radix decimal -childformat {{{[2]} -radix decimal} {{[1]} -radix decimal} {{[0]} -radix decimal}}} {{/tb_CreateKernel/DUT/nnKernel[0]} -radix decimal -childformat {{{[2]} -radix decimal} {{[1]} -radix decimal} {{[0]} -radix decimal}}}} -expand -subitemconfig {{/tb_CreateKernel/DUT/nnKernel[2]} {-height 16 -radix decimal -childformat {{{[2]} -radix decimal} {{[1]} -radix decimal} {{[0]} -radix decimal}} -expand} {/tb_CreateKernel/DUT/nnKernel[2][2]} {-radix decimal} {/tb_CreateKernel/DUT/nnKernel[2][1]} {-radix decimal} {/tb_CreateKernel/DUT/nnKernel[2][0]} {-radix decimal} {/tb_CreateKernel/DUT/nnKernel[1]} {-height 16 -radix decimal -childformat {{{[2]} -radix decimal} {{[1]} -radix decimal} {{[0]} -radix decimal}} -expand} {/tb_CreateKernel/DUT/nnKernel[1][2]} {-radix decimal} {/tb_CreateKernel/DUT/nnKernel[1][1]} {-radix decimal} {/tb_CreateKernel/DUT/nnKernel[1][0]} {-radix decimal} {/tb_CreateKernel/DUT/nnKernel[0]} {-height 16 -radix decimal -childformat {{{[2]} -radix decimal} {{[1]} -radix decimal} {{[0]} -radix decimal}} -expand} {/tb_CreateKernel/DUT/nnKernel[0][2]} {-radix decimal} {/tb_CreateKernel/DUT/nnKernel[0][1]} {-radix decimal} {/tb_CreateKernel/DUT/nnKernel[0][0]} {-radix decimal}} /tb_CreateKernel/DUT/nnKernel
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/nextKernel
+add wave -noupdate -expand -group {Module Signals} -radix decimal /tb_CreateKernel/DUT/contConv
+TreeUpdate [SetDefaultTree]
+WaveRestoreCursors {{Cursor 1} {479912 ps} 0}
+quietly wave cursor active 1
+configure wave -namecolwidth 150
+configure wave -valuecolwidth 100
+configure wave -justifyvalue left
+configure wave -signalnamewidth 1
+configure wave -snapdistance 10
+configure wave -datasetprefix 0
+configure wave -rowmargin 4
+configure wave -childrowmargin 2
+configure wave -gridoffset 0
+configure wave -gridperiod 1
+configure wave -griddelta 40
+configure wave -timeline 0
+configure wave -timelineunits ps
+update
+WaveRestoreZoom {0 ps} {960688 ps}
