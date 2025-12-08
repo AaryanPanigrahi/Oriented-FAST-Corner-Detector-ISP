@@ -2,7 +2,8 @@
 
 module pixel_pos #(
     parameter X_MAX = 5,
-    parameter Y_MAX = 5
+    parameter Y_MAX = 5,
+    parameter MODE = 0
 ) (
     input logic clk, n_rst,
 
@@ -110,26 +111,18 @@ module pixel_pos #(
     assign corr_clear = new_trans || (end_pos && update_pos); 
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
 
-    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
-    localparam X_MODE = 2'd2;      // UP-DOWN
-    localparam Y_MODE = 2'd0;      // COUNT-UP
-
-    flex_counter_dir #(.SIZE($clog2(X_MAX))) X_CORR 
-                            (.clk(clk), .n_rst(n_rst),
-                            .count_enable(x_update), .wrap_val(max_x_eff), .mode(X_MODE), .clear(corr_clear),
-                            .count_out(curr_x), .wrap_flag(wrap_flag), .rollover_flag(rollover_flag));
-
-    flex_counter_dir #(.SIZE($clog2(Y_MAX))) Y_CORR 
-                            (.clk(clk), .n_rst(n_rst),
-                            .count_enable(y_update), .wrap_val(max_y_eff), .mode(Y_MODE), .clear(corr_clear),
-                            .count_out(curr_y), .wrap_flag(), .rollover_flag());
-    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
-
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    //// 
     logic end_x, end_y;
 
     always_comb begin : END_DATA
-        end_x = (max_x_eff == curr_x);
+        // If odd or normal sweep
+        if (MODE || (max_y % 2))
+            end_x = (curr_x == max_x_eff);
+        // If Even
+        else 
+            end_x = (curr_x == 0);
+
+        // End Of Y
         end_y = (max_y_eff == curr_y);
 
         end_pos = end_x && end_y;
@@ -145,11 +138,32 @@ module pixel_pos #(
     end
 
     always_comb begin : DIRECTION_INFO
+        // If Normal
+        if (MODE)
+            next_dir = {wrap_flag, 0};
+
+        // If Snake
+        else begin
             y_dir = new_flag && !y_update_flag_keep && !new_trans_prev;
             x_dir = (wrap_flag || dir_reg) && !(rollover_flag);
 
-        next_dir = {y_dir, x_dir};
+            next_dir = {y_dir, x_dir};
+        end
     end
     ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
 
+    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
+    localparam X_MODE = (MODE) ? 2'd0 : 2'd2;      // UP-DOWN
+    localparam Y_MODE = 2'd0;                      // COUNT-UP
+
+    flex_counter_dir #(.SIZE($clog2(X_MAX))) X_CORR 
+                            (.clk(clk), .n_rst(n_rst),
+                            .count_enable(x_update), .wrap_val(max_x_eff), .mode(X_MODE), .clear(corr_clear || (MODE && end_x && update_pos)),
+                            .count_out(curr_x), .wrap_flag(wrap_flag), .rollover_flag(rollover_flag));
+
+    flex_counter_dir #(.SIZE($clog2(Y_MAX))) Y_CORR 
+                            (.clk(clk), .n_rst(n_rst),
+                            .count_enable(y_update), .wrap_val(max_y_eff), .mode(Y_MODE), .clear(corr_clear),
+                            .count_out(curr_y), .wrap_flag(), .rollover_flag());
+    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////    ////
 endmodule
