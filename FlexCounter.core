@@ -1,28 +1,25 @@
 CAPI=2:
-name: "u337mg005:ece337:CreateKernel:1.0.0"
+name: "u337mg005:ece337:FlexCounter:1.0.0"
 description: ""
 
 filesets:
     rtl:
         files:
-            - "source/CreateKernel.sv"
+            - "source/FlexCounter.sv"
         file_type: systemVerilogSource
         # depend:
         #     - "fusesoc:core:name"
-        depend:
-            - "u337mg005:ece337:FlexCounter"
-            - "u337mg005:ece337:InitKernel"
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg005:ece337:CreateKernel_syn"
+            - "u337mg005:ece337:FlexCounter_syn"
 
     tb:
         files:
-            - "testbench/tb_CreateKernel.sv"
-            - "waves/CreateKernel.do": { file_type: user }
-            - "waves/CreateKernel.gtkw": { file_type: user }
+            - "testbench/tb_FlexCounter.sv"
+            - "waves/FlexCounter.do": { file_type: user }
+            - "waves/FlexCounter.gtkw": { file_type: user }
             # - "data/file.txt": { file_type: user }
         file_type: systemVerilogSource
 
@@ -34,21 +31,21 @@ targets:
     default: &default
         filesets:
             - rtl
-        toplevel: CreateKernel
+        toplevel: FlexCounter
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_CreateKernel
+        toplevel: tb_FlexCounter
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/CreateKernel.do
+                    - -do waves/FlexCounter.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -81,7 +78,7 @@ targets:
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: CreateKernel
+        toplevel: FlexCounter
         tools:
             design_compiler:
                 script_dir: "src/u337mg005_ece337_synfiles_0"
