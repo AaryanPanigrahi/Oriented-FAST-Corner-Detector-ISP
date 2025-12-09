@@ -1,22 +1,23 @@
 `timescale 1ns / 10ps
 
 module ComputeKernel #(
-    parameter [3:0] SIZE = 4'd3
+    parameter MAX_KERNEL = 3
 )(
     input logic clk, n_rst,
-    input logic [SIZE-1:0][SIZE-1:0][7:0] input_matrix, kernel,
+    input logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] input_matrix, kernel,
+    input logic [$clog2(MAX_KERNEL)-1:0] kernel_size,
     input logic start,
+    output logic clear_flag,
     input logic clear,
-    output logic [7:0] blurred_pixel,
     output logic done,
-    output logic clear_flag
+    output logic [7:0] blurred_pixel
 );
-logic readyFlag;  // Ready signal for moving through rows/columnsd
-logic [3:0] cur_x, cur_y; // Indexs of the array
+
+logic readyFlag;  // Ready signal for moving through rows/columns
+logic [$clog2(MAX_KERNEL)-1:0] cur_x, cur_y; // Indexs of the array
 logic contConv;   // Prevents the counter from moving forward until the matrix is ready
 logic [7:0] kernel_v, pixel_v; // Holds the value of the current cell
-logic temp_rollover, done_in_the_next_cycle;
-
+logic done_in_the_next_cycle;
 logic end_pos;
 
 assign done_in_the_next_cycle = contConv && end_pos && readyFlag;
@@ -41,33 +42,45 @@ end
 
 assign single_pulse_start = start && !start_prev;
 
-pixel_pos #(.X_MAX(SIZE), .Y_MAX(SIZE), .MODE(1)) get_position (
+pixel_pos #(.X_MAX(MAX_KERNEL), .Y_MAX(MAX_KERNEL), .MODE(1)) get_position (
     .clk(clk), .n_rst(n_rst),
+    // Update
     .new_trans(single_pulse_start),
-    .max_x(SIZE), .max_y(SIZE),
     .update_pos(readyFlag && (contConv)),
-    .curr_y(cur_y), .curr_x(cur_x),
-    .end_pos(end_pos), .next_dir());
+    // Positiom
+    .max_x(kernel_size), 
+    .max_y(kernel_size),
+    .curr_x(cur_x),
+    .curr_y(cur_y), 
+    .end_pos(end_pos), 
+    .next_dir());
 
 KernelAccumulator get_accumulator (
     .clk(clk),
     .n_rst(n_rst),
+    // Kernel Value
     .kernel_v(kernel_v),
     .pixel_v(pixel_v),
+    // IO
     .start(contConv),
     .clear(clear),
     .ready(readyFlag),
     .clear_flag(clear_flag),
+    // Out
     .sum(blurred_pixel));
 
-MatrixIndex #(.SIZE(SIZE)) get_index (
+MatrixIndex #(.MAX_KERNEL(MAX_KERNEL)) get_index (
     .clk(clk),
     .n_rst(n_rst),
+    // Position
     .cur_x(cur_x),
     .cur_y(cur_y),
+    // Input Array
     .kernel(kernel),
     .in(input_matrix),
+    // Enable
     .en_strobe(readyFlag),
+    // Out
     .kernel_v(kernel_v),
     .pixel_v(pixel_v));
 
