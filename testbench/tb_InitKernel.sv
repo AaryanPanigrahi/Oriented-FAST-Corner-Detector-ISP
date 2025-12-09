@@ -52,8 +52,9 @@ module tb_InitKernel ();
 
     task build;
     begin
+        @(posedge clk);
         start = 1'b1;
-        @(negedge clk);
+        @(posedge clk);
         start = 1'b0;
 
         
@@ -63,6 +64,8 @@ module tb_InitKernel ();
 
     initial begin
         n_rst = 1;
+        sigma = 3'd1;
+        kernel_size = 1;
 
         reset_dut; 
 
