@@ -4,7 +4,7 @@
 module tb_InitKernel ();
 
     localparam CLK_PERIOD = 10ns;
-    localparam MAX_KERNAL = 4'd7;
+    localparam MAX_KERNEL = 4'd7;
 
     initial begin
         $dumpfile("waveform.vcd");
@@ -14,8 +14,8 @@ module tb_InitKernel ();
     logic clk, n_rst;
     logic start;
     logic [2:0] sigma;
-    logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] kernel;
-    logic [$clog2(MAX_KERNAL)-1:0] kernel_size;
+    logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] kernel;
+    logic [$clog2(MAX_KERNEL)-1:0] kernel_size;
     logic [63:0] sum;
     logic done;
 
@@ -41,7 +41,7 @@ module tb_InitKernel ();
     end
     endtask
 
-    InitKernel #(.MAX_KERNAL(MAX_KERNAL)) DUT (
+    InitKernel #(.MAX_KERNEL(MAX_KERNEL)) DUT (
         .clk(clk), .n_rst(n_rst),
         .start(start),
         .sigma(sigma),
@@ -57,8 +57,7 @@ module tb_InitKernel ();
         @(posedge clk);
         start = 1'b0;
 
-        
-        repeat (MAX_KERNAL * MAX_KERNAL + 10) @(negedge clk);
+        while (done == 0) @(negedge clk);
     end
     endtask
 
@@ -71,6 +70,12 @@ module tb_InitKernel ();
 
         sigma = 3'd2;
         kernel_size = 3;
+        build();
+
+        repeat (50) @(negedge clk);
+        
+        sigma = 3'd2;
+        kernel_size = 5;
         build();
         
         $finish;
