@@ -1,36 +1,44 @@
 `timescale 1ns / 10ps
 
 module CreateKernel #(
-    parameter MAX_KERNAL = 3
+    parameter MAX_KERNEL = 3
 ) (
     input logic clk, n_rst,
     input logic [2:0] sigma,
-    input logic [$clog2(MAX_KERNAL)-1:0] kernel_size,
+    input logic [$clog2(MAX_KERNEL)-1:0] kernel_size,
     input logic start,
-    output logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] kernel,
+    output logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] kernel,
     output logic done,
     output logic err
-
 );
+
 // logic readyFlag;      // Ready signal for moving through rows/columns
 logic end_row, end_column; // Signal for end of row/columns
-logic [$clog2(MAX_KERNAL)-1:0] cur_x, cur_y;
+logic [$clog2(MAX_KERNEL)-1:0] cur_x, cur_y;
 
 logic [31:0] numerator, quotient;
 logic [31:0] sum; // Holds the value to normalize with
 logic start_nn; // Starts the normalization process
 logic nextDone;       // Signals when to stop counting
 
-logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] nnKernel;   // Hold the non-normalized values 
-logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] nextKernel; // Used to clock the build kernel
-logic contConv;   // Prevents the counter from moving forward until the matrix is ready
+logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] nnKernel;   // Hold the non-normalized values 
+logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] nextKernel; // Used to clock the build kernel
+logic contConv, contConv_latch;   // Prevents the counter from moving forward until the matrix is ready
 
-always_latch begin : Computation_Latch
-    if (start_nn) contConv = 1;
-    if (done) contConv = 0;
+always_ff @(posedge clk, negedge n_rst) begin
+    if(!n_rst) contConv_latch <= 0;
+
+    else begin
+        contConv_latch <= contConv && !done;
+    end
 end
 
-FlexCounter #(.SIZE($clog2(MAX_KERNAL))) rows_build (
+always_comb begin
+    contConv = contConv_latch;
+    if (start_nn) contConv = 1;
+end
+
+FlexCounter #(.SIZE($clog2(MAX_KERNEL))) rows_build (
     .clk(clk),
     .n_rst(n_rst),
     .count_enable((contConv || done)),
@@ -39,7 +47,7 @@ FlexCounter #(.SIZE($clog2(MAX_KERNAL))) rows_build (
     .rollover_flag(end_row),
     .count_out(cur_x));
 
-FlexCounter #(.SIZE($clog2(MAX_KERNAL))) columns_build (
+FlexCounter #(.SIZE($clog2(MAX_KERNEL))) columns_build (
     .clk(clk),
     .n_rst(n_rst),
     .count_enable(end_row && (contConv || done)),
@@ -48,7 +56,7 @@ FlexCounter #(.SIZE($clog2(MAX_KERNAL))) columns_build (
     .rollover_flag(end_column),
     .count_out(cur_y));
 
-InitKernel #(.MAX_KERNAL(MAX_KERNAL)) non_normalized_kernel (
+InitKernel #(.MAX_KERNEL(MAX_KERNEL)) non_normalized_kernel (
     .clk(clk),
     .n_rst(n_rst),
     .start(start),
