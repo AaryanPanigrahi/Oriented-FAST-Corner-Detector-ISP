@@ -1,11 +1,11 @@
 `timescale 1ns / 10ps
 
 module MatrixIndex #(
-    parameter [3:0] SIZE = 4'd3
+    parameter MAX_KERNEL = 3
 ) (
     input logic clk, n_rst,
-    input logic [3:0] cur_x, cur_y,
-    input logic [SIZE-1:0][SIZE-1:0][7:0] kernel, in,
+    input logic [$clog2(MAX_KERNEL)-1:0] cur_x, cur_y,
+    input logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] kernel, in,
     input logic en_strobe,
     output logic [7:0] kernel_v, pixel_v
 );
