@@ -53,6 +53,7 @@ InitKernel #(.MAX_KERNAL(MAX_KERNAL)) non_normalized_kernel (
     .n_rst(n_rst),
     .start(start),
     .sigma(sigma),
+    .kernel_size(kernel_size),
     .kernel(nnKernel),
     .done(start_nn),
     .sum(sum));
@@ -93,7 +94,6 @@ always_comb begin : Normalize_Matrix
     end
 
     if (end_column && end_row) nextDone = 1'b1;
-    
 end
 
 endmodule
