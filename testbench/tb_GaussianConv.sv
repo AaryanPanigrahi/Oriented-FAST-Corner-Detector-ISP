@@ -92,21 +92,6 @@ module tb_GaussianConv ();
         .rdat   (rdat_conv)
     );
 
-    // task automatic do_write(input logic [PIXEL_DEPTH-1:0] d);
-    //     @(negedge clk);
-    //     wdat <= d;
-    //     wen  <= 1;
-    //     @(negedge clk);
-    //     wen  <= 0;
-    // endtask
-
-    // task automatic do_read(output logic [PIXEL_DEPTH-1:0] q);
-    //     @(negedge clk);
-    //     wen  <= 0;
-    //     @(negedge clk);            // sync read: data valid after this edge
-    //     q = rdat;
-    // endtask
-
     task reset_dut;
     begin
         n_rst = 0;
