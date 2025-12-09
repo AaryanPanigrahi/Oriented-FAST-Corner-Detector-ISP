@@ -4,18 +4,21 @@
 module tb_ComputeKernel ();
 
     localparam CLK_PERIOD = 10ns;
+    localparam [3:0] MAX_KERNEL = 4'd7;
 
     initial begin
         $dumpfile("waveform.vcd");
         $dumpvars;
     end
 
-    parameter [3:0] SIZE = 4'd5;
     logic clk, n_rst;
-    logic [SIZE-1:0][SIZE-1:0][7:0] input_matrix, kernel;
+    logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] input_matrix, kernel;
     logic start;
     logic [7:0] blurred_pixel;
+    logic [$clog2(MAX_KERNEL)-1:0] kernel_size;
     logic done;
+    logic clear, clear_flag;
+    logic [2:0] sigma;
     
     // clockgen
     always begin
@@ -31,36 +34,48 @@ module tb_ComputeKernel ();
         input_matrix = '0;
         start = '0;
         @(posedge clk);
-        @(posedge clk);
-        @(negedge clk);
         n_rst = 1;
-        @(posedge clk);
         @(posedge clk);
     end
     endtask
 
-    ComputeKernel #(.SIZE(SIZE)) DUT (
+    logic kernel_start, kernel_done;
+    CreateKernel #(.MAX_KERNEL(MAX_KERNEL)) build_kernel (
         .clk(clk), .n_rst(n_rst),
+        // Params
+        .sigma(sigma),
+        .kernel_size(kernel_size),
+        // IO
+        .start(kernel_start),
+        .done(kernel_done),
+        // Output
+        .err(),
+        .kernel(kernel));
+
+    ComputeKernel #(.MAX_KERNEL(MAX_KERNEL)) DUT (
+        .clk(clk), .n_rst(n_rst),
+        // Params
+        .kernel_size(kernel_size),
+        // IO
+        .start(start),
+        .done(done),
+        // Input Arrays
         .input_matrix(input_matrix),
         .kernel(kernel),
-        .start(start),
+        // Out
         .blurred_pixel(blurred_pixel),
-        .done(done));
-
-    logic kernel_start, kernel_done;
-    CreateKernel #(.SIZE(SIZE)) build_kernel (
-        .clk(clk), .n_rst(n_rst),
-        .sigma(3'd1),
-        .start(kernel_start),
-        .kernel(kernel),
-        .done(kernel_done),
-        .err());
+        // Telemetry
+        .clear(clear),
+        .clear_flag(clear_flag));
 
     task build;
     begin
+        @(posedge clk);
         kernel_start = 1'b1;
-        @(negedge clk);
+        @(posedge clk);
         kernel_start = 1'b0;
+        
+        //repeat (500) @(negedge clk);
         while(kernel_done == 0) begin
             @(negedge clk);
         end
@@ -69,7 +84,15 @@ module tb_ComputeKernel ();
 
     initial begin
         n_rst = 1;
+        kernel_size = 1;
+        sigma = 1;
+        start = 0;
+        clear = 0;
+        kernel_start = 0;
         reset_dut();
+
+        sigma = 1;
+        kernel_size = 3;
         
         build();
 
@@ -106,6 +129,8 @@ module tb_ComputeKernel ();
         start = 1'b1;
         repeat (3) @(negedge clk);
         start = 1'b0;
+
+        //repeat (500) @(negedge clk);
         while(done == 0) begin
             @(negedge clk);
         end
