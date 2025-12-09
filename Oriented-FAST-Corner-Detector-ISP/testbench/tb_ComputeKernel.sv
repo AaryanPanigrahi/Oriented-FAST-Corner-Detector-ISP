@@ -117,4 +117,3 @@ module tb_ComputeKernel ();
 endmodule
 
 /* verilator coverage_on */
-

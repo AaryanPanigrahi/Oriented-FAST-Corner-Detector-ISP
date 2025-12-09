@@ -42,4 +42,3 @@ module FlexCounter #(
         end
     end
 endmodule
-

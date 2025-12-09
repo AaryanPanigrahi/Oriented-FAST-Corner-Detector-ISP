@@ -44,4 +44,3 @@ module tb_FlexCounter ();
 endmodule
 
 /* verilator coverage_on */
-

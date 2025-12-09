@@ -32,6 +32,4 @@ always_comb begin : Index_Kernel
     end
 end
 
-
 endmodule
-

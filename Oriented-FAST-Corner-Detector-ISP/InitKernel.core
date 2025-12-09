@@ -1,5 +1,5 @@
 CAPI=2:
-name: "u337mg005:ece337:InitKernel:1.0.0"
+name: "u337mg015:ece337:InitKernel:1.0.0"
 description: ""
 
 filesets:
@@ -10,12 +10,12 @@ filesets:
         # depend:
         #     - "fusesoc:core:name"
         depend:
-            - "u337mg005:ece337:FlexCounter"
+            - "u337mg015:ece337:pixel_pos"
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg005:ece337:InitKernel_syn"
+            - "u337mg015:ece337:InitKernel_syn"
 
     tb:
         files:
@@ -27,7 +27,7 @@ filesets:
 
     synfiles:
         depend:
-            - "u337mg005:ece337:synfiles"
+            - "u337mg015:ece337:synfiles"
 
 targets:
     default: &default
@@ -74,6 +74,9 @@ targets:
                 verilator_options:
                     - --timing
                     - -Wall
+                    - -Wno-PINCONNECTEMPTY
+                    - -Wno-WIDTHEXPAND
+                    - -Wno-WIDTHTRUNC
 
     syn:
         <<: *default
@@ -83,7 +86,7 @@ targets:
         toplevel: InitKernel
         tools:
             design_compiler:
-                script_dir: "src/u337mg005_ece337_synfiles_0"
+                script_dir: "src/u337mg015_ece337_synfiles_0"
                 dc_script: "synth.tcl"
                 report_dir: "reports"
                 target_library: "/home/ecegrid/a/ece337/summer24-refactor/tech/ami05/osu05_stdcells.db"
@@ -94,4 +97,3 @@ targets:
         filesets:
             - synth
             - tb
-

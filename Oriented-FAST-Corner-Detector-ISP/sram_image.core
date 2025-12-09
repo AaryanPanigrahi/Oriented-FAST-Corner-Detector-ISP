@@ -1,52 +1,55 @@
 CAPI=2:
-name: "u337mg005:ece337:KernelAccumulator:1.0.0"
+name: "u337mg015:ece337:sram_image:1.0.0"
 description: ""
 
 filesets:
     rtl:
-        files:
-            - "source/KernelAccumulator.sv"
+        files: []
         file_type: systemVerilogSource
-        # depend:
-        #     - "fusesoc:core:name"
 
+    tb:
+        files:
+            - "source/sram_image.sv"                  
+            - "testbench/tb_sram_image.sv"          
+
+            - "source/sram_model.sv" 
+            - "testbench/tb_sram_model.sv"   
+
+            - "waves/sram_image.do":  { file_type: user }
+            - "waves/sram_image.gtkw": { file_type: user }
+            
+            - "image/test_16x16.hex":    { file_type: user }  
+            - "image/test_200x200.hex":    { file_type: user }  
+        file_type: systemVerilogSource
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg005:ece337:KernelAccumulator_syn"
-
-    tb:
-        files:
-            - "testbench/tb_KernelAccumulator.sv"
-            - "waves/KernelAccumulator.do": { file_type: user }
-            - "waves/KernelAccumulator.gtkw": { file_type: user }
-            # - "data/file.txt": { file_type: user }
-        file_type: systemVerilogSource
+            - "u337mg015:ece337:sram_image_syn"
 
     synfiles:
         depend:
-            - "u337mg005:ece337:synfiles"
+            - "u337mg015:ece337:synfiles"
 
 targets:
     default: &default
         filesets:
             - rtl
-        toplevel: KernelAccumulator
+        toplevel: sram_image
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_KernelAccumulator
+        toplevel: tb_sram_image
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/KernelAccumulator.do
+                    - -do waves/sram_image.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -73,16 +76,18 @@ targets:
                 verilator_options:
                     - --timing
                     - -Wall
+                    - -Wno-PINCONNECTEMPTY
+                    - -Wno-GENUNNAMED
 
     syn:
         <<: *default
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: KernelAccumulator
+        toplevel: sram_image
         tools:
             design_compiler:
-                script_dir: "src/u337mg005_ece337_synfiles_0"
+                script_dir: "src/u337mg015_ece337_synfiles_0"
                 dc_script: "synth.tcl"
                 report_dir: "reports"
                 target_library: "/home/ecegrid/a/ece337/summer24-refactor/tech/ami05/osu05_stdcells.db"
@@ -93,4 +98,3 @@ targets:
         filesets:
             - synth
             - tb
-

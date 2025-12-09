@@ -2,6 +2,11 @@ onerror {resume}
 quietly WaveActivateNextPane {} 0
 add wave -noupdate -expand -group Sync -label clk -radix binary -radixshowbase 0 /tb_pixel_pos/clk
 add wave -noupdate -expand -group Sync -label n_rst -radix binary -radixshowbase 0 /tb_pixel_pos/n_rst
+add wave -noupdate -group Params -label X_MAX /tb_pixel_pos/dut/X_MAX
+add wave -noupdate -group Params -label Y_MAX /tb_pixel_pos/dut/Y_MAX
+add wave -noupdate -group Params -label MODE /tb_pixel_pos/dut/MODE
+add wave -noupdate -group Params -group Internal -label X_MODE /tb_pixel_pos/dut/X_MODE
+add wave -noupdate -group Params -group Internal -label Y_MODE /tb_pixel_pos/dut/Y_MODE
 add wave -noupdate -expand -group Input -label new_trans -radix binary -radixshowbase 0 /tb_pixel_pos/new_trans
 add wave -noupdate -expand -group Input -label update_pos -radix binary -radixshowbase 0 /tb_pixel_pos/update_pos
 add wave -noupdate -expand -group Input -label max_x -radix unsigned -radixshowbase 0 /tb_pixel_pos/max_x
@@ -9,12 +14,26 @@ add wave -noupdate -expand -group Input -label max_y -radix unsigned -radixshowb
 add wave -noupdate -expand -group Output -label curr_x -radix unsigned -radixshowbase 0 /tb_pixel_pos/curr_x
 add wave -noupdate -expand -group Output -label curr_y -radix unsigned -radixshowbase 0 /tb_pixel_pos/curr_y
 add wave -noupdate -expand -group Output -label next_dir -radix binary -radixshowbase 0 /tb_pixel_pos/next_dir
+add wave -noupdate -expand -group Output -label next_move /tb_pixel_pos/next_move
 add wave -noupdate -expand -group Output -label end_pos -radix binary -radixshowbase 0 /tb_pixel_pos/end_pos
+add wave -noupdate -group Updates /tb_pixel_pos/dut/x_update
+add wave -noupdate -group Updates /tb_pixel_pos/dut/y_update
+add wave -noupdate -group Updates /tb_pixel_pos/dut/y_update_flag
+add wave -noupdate -group Updates /tb_pixel_pos/dut/y_update_flag_keep
+add wave -noupdate -group _over_logic /tb_pixel_pos/dut/rollover_flag
+add wave -noupdate -group _over_logic /tb_pixel_pos/dut/wrap_flag
+add wave -noupdate -group _over_logic /tb_pixel_pos/dut/rollover_flag_prev
+add wave -noupdate -group _over_logic /tb_pixel_pos/dut/rollover_flag_prev_exp
+add wave -noupdate -group _over_logic /tb_pixel_pos/dut/wrap_flag_prev
+add wave -noupdate -group _over_logic /tb_pixel_pos/dut/wrap_flag_prev_exp
+add wave -noupdate -group {New Trans and Clear} /tb_pixel_pos/dut/new_trans_prev
+add wave -noupdate -group {New Trans and Clear} /tb_pixel_pos/dut/new_trans_prev_exp
+add wave -noupdate -group {New Trans and Clear} /tb_pixel_pos/dut/corr_clear
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {574048934 ps} 0}
+WaveRestoreCursors {{Cursor 1} {185000 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 128
-configure wave -valuecolwidth 39
+configure wave -namecolwidth 281
+configure wave -valuecolwidth 40
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
 configure wave -snapdistance 10
@@ -27,4 +46,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {574032201 ps} {574065666 ps}
+WaveRestoreZoom {0 ps} {2656500 ps}

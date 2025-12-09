@@ -72,17 +72,18 @@
 module tb_CreateKernel ();
 
     localparam CLK_PERIOD = 10ns;
+    localparam MAX_KERNAL = 7;
 
     initial begin
         $dumpfile("waveform.vcd");
         $dumpvars;
     end
 
-    parameter [3:0] SIZE = 4'd7;
     logic clk, n_rst;
     logic [2:0] sigma;
-    logic start, err;
-    logic [SIZE-1:0][SIZE-1:0][7:0] kernel;
+    logic start, err, done;
+    logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] kernel;
+    logic [$clog2(MAX_KERNAL)-1:0] kernel_size;
 
     // clockgen
     always begin
@@ -108,23 +109,29 @@ module tb_CreateKernel ();
 
     task build;
     begin
+        @(posedge clk);
         start = 1'b1;
-        @(negedge clk);
+        @(posedge clk);
         start = 1'b0;
-        repeat (200) @(negedge clk);
+        
+        while (done == 0);
     end
     endtask
 
-    CreateKernel #(.SIZE(SIZE)) DUT (
+    CreateKernel #(.MAX_KERNAL(MAX_KERNAL)) DUT (
         .clk(clk), .n_rst(n_rst),
         .sigma(sigma), .start(start),
+        .kernel_size(kernel_size),
         .kernel(kernel),
-        .err(err));
+        .err(err),
+        .done(done));
 
     initial begin
         n_rst = 1;
         reset_dut;
 
+        repeat (5) @(negedge clk);
+        kernel_size = 7;
         sigma = 3'd2;
         build();
 
@@ -133,4 +140,3 @@ module tb_CreateKernel ();
 endmodule
 
 /* verilator coverage_on */
-

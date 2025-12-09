@@ -1,27 +1,28 @@
 `timescale 1ns / 10ps
 
 module CreateKernel #(
-    parameter [3:0] SIZE = 4'd3
+    parameter MAX_KERNAL = 3
 ) (
     input logic clk, n_rst,
     input logic [2:0] sigma,
+    input logic [$clog2(MAX_KERNAL)-1:0] kernel_size,
     input logic start,
-    output logic [SIZE-1:0][SIZE-1:0][7:0] kernel,
+    output logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] kernel,
     output logic done,
     output logic err
 
 );
 // logic readyFlag;      // Ready signal for moving through rows/columns
 logic end_row, end_column; // Signal for end of row/columns
-logic [3:0] cur_x, cur_y;
+logic [$clog2(MAX_KERNAL)-1:0] cur_x, cur_y;
 
 logic [31:0] numerator, quotient;
 logic [31:0] sum; // Holds the value to normalize with
 logic start_nn; // Starts the normalization process
 logic nextDone;       // Signals when to stop counting
 
-logic [SIZE-1:0][SIZE-1:0][7:0] nnKernel;   // Hold the non-normalized values 
-logic [SIZE-1:0][SIZE-1:0][7:0] nextKernel; // Used to clock the build kernel
+logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] nnKernel;   // Hold the non-normalized values 
+logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] nextKernel; // Used to clock the build kernel
 logic contConv;   // Prevents the counter from moving forward until the matrix is ready
 
 always_latch begin : Computation_Latch
@@ -29,25 +30,25 @@ always_latch begin : Computation_Latch
     if (done) contConv = 0;
 end
 
-FlexCounter #(.SIZE(4)) rows_build (
+FlexCounter #(.SIZE($clog2(MAX_KERNAL))) rows_build (
     .clk(clk),
     .n_rst(n_rst),
     .count_enable((contConv || done)),
-    .rollover_val(SIZE-4'd1),
+    .rollover_val(kernel_size-1),
     .clear(1'b0),
     .rollover_flag(end_row),
     .count_out(cur_x));
 
-FlexCounter #(.SIZE(4)) columns_build (
+FlexCounter #(.SIZE($clog2(MAX_KERNAL))) columns_build (
     .clk(clk),
     .n_rst(n_rst),
     .count_enable(end_row && (contConv || done)),
-    .rollover_val(SIZE-4'd1),
+    .rollover_val(kernel_size-1),
     .clear(1'b0),
     .rollover_flag(end_column),
     .count_out(cur_y));
 
-InitKernel #(.SIZE(SIZE)) non_normalized_kernel (
+InitKernel #(.MAX_KERNAL(MAX_KERNAL)) non_normalized_kernel (
     .clk(clk),
     .n_rst(n_rst),
     .start(start),
@@ -96,4 +97,3 @@ always_comb begin : Normalize_Matrix
 end
 
 endmodule
-
