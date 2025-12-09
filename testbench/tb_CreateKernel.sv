@@ -114,7 +114,7 @@ module tb_CreateKernel ();
         @(posedge clk);
         start = 1'b0;
         
-        while (done == 0);
+        repeat (200) @(negedge clk);
     end
     endtask
 
@@ -128,10 +128,12 @@ module tb_CreateKernel ();
 
     initial begin
         n_rst = 1;
+        kernel_size = 3;
+        sigma = 3'd1;
         reset_dut;
 
         repeat (5) @(negedge clk);
-        kernel_size = 7;
+        kernel_size = 3;
         sigma = 3'd2;
         build();
 
