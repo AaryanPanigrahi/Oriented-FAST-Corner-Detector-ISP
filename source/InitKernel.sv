@@ -1,13 +1,13 @@
 `timescale 1ns / 10ps
 
 module InitKernel #(
-    parameter MAX_KERNAL = 7
+    parameter MAX_KERNEL = 7
 ) (
     input logic clk, n_rst,
     input logic start,
     input logic [2:0] sigma,
-    input logic [$clog2(MAX_KERNAL)-1:0] kernel_size,
-    output logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] kernel,
+    input logic [$clog2(MAX_KERNEL)-1:0] kernel_size,
+    output logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] kernel,
     output logic [31:0] sum,
     output logic done
 );
@@ -16,9 +16,9 @@ real e = 2.718281828;
 real calc_gauss; // Holds the calculation
 real calc_x, calc_y; //The x/y distance from the center
 bit [31:0] real_bits_gauss, real_bits_gauss_curr; 
-logic [$clog2(MAX_KERNAL)-1:0] curr_x, prev_x, curr_y, prev_y;
-logic nextDone, done_future;       // Signals when to stop counting
-logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][7:0] nextKernel;
+logic [$clog2(MAX_KERNEL)-1:0] curr_x, prev_x, curr_y, prev_y;
+logic nextDone, done_future1, done_future2;       // Signals when to stop counting
+logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] nextKernel;
 logic [3:0] center;
 assign center = (kernel_size-1)/2;
 logic [31:0] nextSum;
@@ -41,12 +41,14 @@ end
 always_ff @(posedge clk, negedge n_rst) begin
     if (!n_rst) begin
         done <= 0;
-        done_future <= 0;
+        done_future2 <= 0;
+        done_future1 <= 0;
         sum <= 0;
     end
     else begin
-        done_future <= nextDone;
-        done        <= done_future;
+        done_future2 <= nextDone;
+        done_future1 <= done_future2;
+        done         <= done_future1;
         sum <= nextSum;
     end
 end
@@ -56,22 +58,22 @@ always_comb begin
     if (end_pos && contConv) nextDone = 1'b1;
 end
 
-logic [$clog2(MAX_KERNAL)-1:0] idx_x, idx_x2, idx_y, idx_y2;
+logic [$clog2(MAX_KERNEL)-1:0] idx_x, idx_x2, idx_y, idx_y2;
 always_ff @(posedge clk, negedge n_rst) begin
     if(~n_rst) begin
-        for (idx_y = 0; idx_y < MAX_KERNAL; idx_y++) begin
-            for (idx_x = 0; idx_x < MAX_KERNAL; idx_x++) begin
+        for (idx_y = 0; idx_y < MAX_KERNEL; idx_y++) begin
+            for (idx_x = 0; idx_x < MAX_KERNEL; idx_x++) begin
                 kernel[idx_x][idx_y][7:0] <= '0;
             end
         end
     end
 
     else begin
-        if (done) kernel <= nextKernel;
+        if (done_future1) kernel <= nextKernel;
     end 
 end
 
-pixel_pos #(.X_MAX(MAX_KERNAL), .Y_MAX(MAX_KERNAL), .MODE(1)) kernel_pos (
+pixel_pos #(.X_MAX(MAX_KERNEL), .Y_MAX(MAX_KERNEL), .MODE(1)) kernel_pos (
     .clk(clk), .n_rst(n_rst),
     .new_trans(start),
     .update_pos((contConv)),
@@ -93,7 +95,7 @@ always_comb begin
     
     // Accumulator
     nextSum = sum;
-    if(contConv) begin
+    if(contConv && !nextDone) begin
         nextSum = sum + real_bits_gauss;
     end
 end
@@ -115,8 +117,8 @@ always_ff @(posedge clk, negedge n_rst) begin
         real_bits_gauss_curr <= '0;
 
         // Reset Vals
-        for (idx_y2 = 0; idx_y2 < MAX_KERNAL; idx_y2++) begin
-            for (idx_x2 = 0; idx_x2 < MAX_KERNAL; idx_x2++) begin
+        for (idx_y2 = 0; idx_y2 < MAX_KERNEL; idx_y2++) begin
+            for (idx_x2 = 0; idx_x2 < MAX_KERNEL; idx_x2++) begin
                 nextKernel[idx_x2][idx_y2][7:0] <= '0;
             end
         end
@@ -127,8 +129,8 @@ always_ff @(posedge clk, negedge n_rst) begin
 
         // Reset Module
         if (start) begin
-            for (idx_y2 = 0; idx_y2 < MAX_KERNAL; idx_y2++) begin
-                for (idx_x2 = 0; idx_x2 < MAX_KERNAL; idx_x2++) begin
+            for (idx_y2 = 0; idx_y2 < MAX_KERNEL; idx_y2++) begin
+                for (idx_x2 = 0; idx_x2 < MAX_KERNEL; idx_x2++) begin
                     nextKernel[idx_x2][idx_y2][7:0] <= '0;
                 end
             end
