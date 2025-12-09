@@ -85,6 +85,35 @@ module sram_image #(
                     IMAGE_DUT.ram[ram_idx] = temp_img[px_idx];
             end
         end
+
+        
     endfunction
+
+    task automatic dump_img(
+    input string fname,
+    input int xdim,
+    input int ydim
+    );
+        automatic int fd;
+        automatic int ram_idx;
+
+        fd = $fopen(fname, "w");
+        if (fd == 0) $fatal("Cannot open file '%s'", fname);
+
+        for (int y = 0; y < ydim; y++) begin
+            for (int x = 0; x < xdim; x++) begin
+                ram_idx = x + y*X_MAX;
+                $fwrite(fd, "%02x\n", IMAGE_DUT.ram[ram_idx]);
+                $display("urgay");
+            end
+        end
+
+        $fclose(fd);
+        $display("SRAM dumped to file '%s'", fname);
+    endtask
+
+
+
+
 
 endmodule
