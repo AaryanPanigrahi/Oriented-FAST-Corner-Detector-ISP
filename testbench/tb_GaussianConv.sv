@@ -11,7 +11,7 @@ module tb_GaussianConv ();
     end
 
     // SRAM Variables
-    localparam MAX_KERNAL = 8'd5;
+    localparam MAX_KERNEL = 8'd5;
     localparam X_MAX = 16;
     localparam Y_MAX = 16;
     localparam PIXEL_DEPTH = 8;
@@ -26,8 +26,6 @@ module tb_GaussianConv ();
     logic [$clog2(X_MAX) - 1:0] max_x;
     logic [$clog2(Y_MAX) - 1:0] max_y;
     logic [7:0] kernel_size;
-
-    assign kernel_size = MAX_KERNAL;
 
     // Signals
     logic [$clog2(X_MAX):0]   x_addr_img, x_addr_conv;
@@ -44,7 +42,7 @@ module tb_GaussianConv ();
     end
 
     // DUT
-    GaussianConv #(.MAX_KERNAL(MAX_KERNAL), .X_MAX(X_MAX), .Y_MAX(Y_MAX), .PIXEL_DEPTH(PIXEL_DEPTH)) DUT (
+    GaussianConv #(.MAX_KERNEL(MAX_KERNEL), .X_MAX(X_MAX), .Y_MAX(Y_MAX), .PIXEL_DEPTH(PIXEL_DEPTH)) DUT (
         .clk(clk), .n_rst(n_rst),
         // Starting Signals
         .new_trans(new_trans),
@@ -105,10 +103,13 @@ module tb_GaussianConv ();
     begin
         wdat_img = '0; 
         wen_img = 0; 
+        max_x = 1;
+        max_y = 1;
 
         ren_conv = 0;
 
-        sigma = '0;
+        sigma = 1;
+        kernel_size = 1;
         new_trans = '0;
 
         n_rst = 1'b1;
@@ -130,7 +131,12 @@ module tb_GaussianConv ();
     initial begin
         init();
 
-        sigma = 3'd3;
+        repeat (5) @(negedge clk);
+
+        sigma = 3'd2;
+        kernel_size = 3;
+        max_x = 5;
+        max_y = 5;
         begin_trans();
 
         // repeat (1000) @(negedge clk);
