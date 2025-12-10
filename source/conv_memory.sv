@@ -1,7 +1,7 @@
 `timescale 1ns / 10ps
 
 module conv_memory #(
-    parameter MAX_KERNAL = 31,
+    parameter MAX_KERNEL = 31,
     parameter X_MAX = 60,
     parameter Y_MAX = 60,
     parameter PIXEL_DEPTH = 8
@@ -16,7 +16,7 @@ module conv_memory #(
     input logic [PIXEL_DEPTH-1:0] rdat_img,
 
     // getting from img_param SRAM
-    input logic [7:0] kernel_size,
+    input logic [$clog2(MAX_KERNEL)-1:0] kernel_size,
 
     // pixel_pos.sv
     input logic [1:0] next_dir,
@@ -29,13 +29,13 @@ module conv_memory #(
 
     // to gaussian conv
     output logic new_sample_ready,
-    output logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][PIXEL_DEPTH - 1:0] working_memory 
+    output logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][PIXEL_DEPTH - 1:0] working_memory 
 );
     ////    ////    ////    ////    ////    ////    
     // Register Access (k + 2)x(k + 1) sized
-    logic [MAX_KERNAL+1:0][MAX_KERNAL:0][PIXEL_DEPTH - 1:0] reg_bus_out;
-    logic [MAX_KERNAL+1:0][MAX_KERNAL:0]                    reg_bus_le;
-    logic [MAX_KERNAL+1:0][MAX_KERNAL:0][PIXEL_DEPTH - 1:0] reg_bus_in;
+    logic [MAX_KERNEL+1:0][MAX_KERNEL:0][PIXEL_DEPTH - 1:0] reg_bus_out;
+    logic [MAX_KERNEL+1:0][MAX_KERNEL:0]                    reg_bus_le;
+    logic [MAX_KERNEL+1:0][MAX_KERNEL:0][PIXEL_DEPTH - 1:0] reg_bus_in;
 
     // Direction Params
     localparam RIGHT    = 2'b00;
@@ -51,8 +51,8 @@ module conv_memory #(
 
     always_ff @(posedge clk, negedge n_rst) begin : OUTPUT_MAPPING
         if (!n_rst) begin
-            for (idx_x = 0; idx_x < MAX_KERNAL; idx_x++) begin
-                    for (idx_y = 0; idx_y < MAX_KERNAL; idx_y++) begin
+            for (idx_x = 0; idx_x < MAX_KERNEL; idx_x++) begin
+                    for (idx_y = 0; idx_y < MAX_KERNEL; idx_y++) begin
                         working_memory[idx_x][idx_y][PIXEL_DEPTH - 1:0] <= 0;
                     end
             end
@@ -60,16 +60,16 @@ module conv_memory #(
         
         else begin
             if (new_trans) begin
-                for (idx_x = 0; idx_x < MAX_KERNAL; idx_x++) begin
-                    for (idx_y = 0; idx_y < MAX_KERNAL; idx_y++) begin
+                for (idx_x = 0; idx_x < MAX_KERNEL; idx_x++) begin
+                    for (idx_y = 0; idx_y < MAX_KERNEL; idx_y++) begin
                         working_memory[idx_x][idx_y][PIXEL_DEPTH - 1:0] <= 0;
                     end
                 end
             end
 
             else if (new_sample_req) begin
-                for (idx_x = 0; idx_x < MAX_KERNAL; idx_x++) begin
-                    for (idx_y = 0; idx_y < MAX_KERNAL; idx_y++) begin
+                for (idx_x = 0; idx_x < MAX_KERNEL; idx_x++) begin
+                    for (idx_y = 0; idx_y < MAX_KERNEL; idx_y++) begin
                         // Registers have 1 extra on left and right
                         working_memory[idx_x][idx_y][PIXEL_DEPTH - 1:0] <= reg_bus_out[idx_x+1][idx_y][PIXEL_DEPTH - 1:0];
                     end
@@ -85,9 +85,9 @@ module conv_memory #(
         genvar idx_x2, idx_y2;
 
         // Registers have 1 extra on left and right
-        for (idx_x2 = 0; idx_x2 <= MAX_KERNAL + 1; idx_x2++) begin
+        for (idx_x2 = 0; idx_x2 <= MAX_KERNEL + 1; idx_x2++) begin
             // Registers have 1 extra at bottom
-            for (idx_y2 = 0; idx_y2 <= MAX_KERNAL; idx_y2++) begin
+            for (idx_y2 = 0; idx_y2 <= MAX_KERNEL; idx_y2++) begin
                 memory_reg #(.SIZE(PIXEL_DEPTH), .RESET(0)) MEMORY_ (.clk(clk), .n_rst(n_rst),
                                 .load_enable(reg_bus_le[idx_x2][idx_y2]), .parallel_in(reg_bus_in[idx_x2][idx_y2][7:0]),
                                 .parallel_out(reg_bus_out[idx_x2][idx_y2][7:0]));
@@ -104,7 +104,7 @@ module conv_memory #(
     logic wrap_flag;
 
     flex_counter_dir #(
-        .SIZE(8)
+        .SIZE($clog2(MAX_KERNEL))
     ) dut (
         .clk           (clk),
         .n_rst         (n_rst),
@@ -127,9 +127,9 @@ module conv_memory #(
     logic first_trans_flag, first_trans_flag_keep, first_trans_flag_prev;
 
     logic first_end_pos;
-    logic [$clog2(MAX_KERNAL) - 1:0] first_x_addr_curr, first_y_addr_curr, first_x_addr_prev, first_y_addr_prev;
+    logic [$clog2(MAX_KERNEL) - 1:0] first_x_addr_curr, first_y_addr_curr, first_x_addr_prev, first_y_addr_prev;
 
-    pixel_pos #(.X_MAX(MAX_KERNAL), .Y_MAX(MAX_KERNAL)) FIRST_TRANS_CORR (
+    pixel_pos #(.X_MAX(MAX_KERNEL), .Y_MAX(MAX_KERNEL), .MODE(0)) FIRST_TRANS_CORR (
         .clk(clk),
         .n_rst(n_rst),
         .update_pos(first_trans_flag_keep),
@@ -174,32 +174,24 @@ module conv_memory #(
 
     ////    ////    ////    ////    ////    ////
     // Latch on to final count - clear when new req
-    logic new_sample_ready_w;       // Wires
+    logic new_sample_ready_next;
     logic new_sample_req_prev, new_sample_req_info;
     assign new_sample_req_info = new_sample_req_prev || new_sample_req;
-
-    always_ff @(posedge clk, negedge n_rst) begin : SAMPLE_READY_FF
-        if (!n_rst) begin
-            new_sample_ready        <= 0;
-        end
-        
-        // One after rollover flag
-        else begin
-            new_sample_ready        <= new_sample_ready_w && !new_trans;
-        end
-    end
 
     always_ff @(posedge clk, negedge n_rst) begin
         if (!n_rst) new_sample_req_prev <= 0;
         else        new_sample_req_prev <= new_sample_req;
     end
 
-    always_comb begin : NEW_SAMPLE_TRACKER
-        new_sample_ready_w  = wrap_flag && !first_trans_flag;
+    always_ff @(posedge clk, negedge n_rst) begin : SAMPLE_READY_FF
+        if (!n_rst) new_sample_ready   <= 0;
+        // One after rollover flag
+        else new_sample_ready   <= new_sample_ready_next && !new_trans;
+    end
 
-        if (new_sample_req_info) begin
-            new_sample_ready_w = 0;
-        end
+    always_comb begin : NEW_SAMPLE_TRACKER
+        new_sample_ready_next  = wrap_flag && !first_trans_flag;
+        if (!n_rst || new_sample_req_info) new_sample_ready_next = 0;
     end
     ////    ////    ////    ////    ////    ////
 
@@ -264,7 +256,7 @@ module conv_memory #(
         end
 
         else begin
-            sample_updater_int      <= !new_sample_ready_w;
+            sample_updater_int      <= !new_sample_ready_next;
             sample_updater          <= (sample_updater_int && !new_sample_ready && !first_trans_flag_prev);
         end
     end
@@ -276,8 +268,8 @@ module conv_memory #(
 
     always_comb begin
         // Fill it with 0s - Start
-        for (idx_x3 = 0; idx_x3 <= MAX_KERNAL + 1; idx_x3++) begin
-            for (idx_y3 = 0; idx_y3 <= MAX_KERNAL; idx_y3++) begin
+        for (idx_x3 = 0; idx_x3 <= MAX_KERNEL + 1; idx_x3++) begin
+            for (idx_y3 = 0; idx_y3 <= MAX_KERNEL; idx_y3++) begin
                 reg_bus_in[idx_x3][idx_y3][PIXEL_DEPTH - 1:0]   = '0;
                 reg_bus_le[idx_x3][idx_y3]                      = 0;
             end
@@ -309,8 +301,8 @@ module conv_memory #(
 
         // Shifting Out Values - synced by new_sample_req
         else if (new_sample_req) begin : SHIFTING_LOGIC
-            for (idx_x3 = 0; idx_x3 < MAX_KERNAL; idx_x3++) begin
-                for (idx_y3 = 0; idx_y3 < MAX_KERNAL; idx_y3++) begin
+            for (idx_x3 = 0; idx_x3 < MAX_KERNEL; idx_x3++) begin
+                for (idx_y3 = 0; idx_y3 < MAX_KERNEL; idx_y3++) begin
                     // Moving Right
                     if (next_dir == RIGHT)
                         reg_bus_in[idx_x3+1][idx_y3][PIXEL_DEPTH-1:0] = reg_bus_out[idx_x3+2][idx_y3][PIXEL_DEPTH-1:0];
