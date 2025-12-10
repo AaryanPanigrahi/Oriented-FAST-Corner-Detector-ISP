@@ -13,23 +13,34 @@ module ComputeKernel #(
     output logic [7:0] blurred_pixel
 );
 
-logic readyFlag;  // Ready signal for moving through rows/columns
+logic readyFlag, readyFlag_prev;  // Ready signal for moving through rows/columns
 logic [$clog2(MAX_KERNEL)-1:0] cur_x, cur_y; // Indexs of the array
 logic contConv;   // Prevents the counter from moving forward until the matrix is ready
 logic [7:0] kernel_v, pixel_v; // Holds the value of the current cell
-logic done_in_the_next_cycle;
-logic end_pos;
+logic end_pos, end_pos_prev;
 
-assign done_in_the_next_cycle = contConv && end_pos && readyFlag;
+always_ff @(posedge clk, negedge n_rst) begin
+    if (!n_rst) readyFlag_prev <= 0;
+    else        readyFlag_prev <= readyFlag;
+end
+
+assign done = readyFlag && !readyFlag_prev && !contConv && end_pos_prev;
+ 
+always_ff @(posedge clk, negedge n_rst) begin
+    if (!n_rst) end_pos_prev <= 0;
+    else begin
+        if (readyFlag && (contConv))
+            end_pos_prev <= end_pos;
+    end
+end
+
 
 always_ff @(posedge clk, negedge n_rst) begin : Computation_FF
     if (~n_rst) begin
         contConv <= 1'b0;
-        done <= 1'b0;
     end
     else begin
-        done <= done_in_the_next_cycle;
-        if (!done_in_the_next_cycle) contConv <= 1'b0;
+        if (end_pos_prev) contConv <= 1'b0;
         if (start) contConv <= 1'b1;
     end
 end
@@ -46,7 +57,7 @@ pixel_pos #(.X_MAX(MAX_KERNEL), .Y_MAX(MAX_KERNEL), .MODE(1)) get_position (
     .clk(clk), .n_rst(n_rst),
     // Update
     .new_trans(single_pulse_start),
-    .update_pos(readyFlag && (contConv)),
+    .update_pos(readyFlag && contConv),
     // Positiom
     .max_x(kernel_size), 
     .max_y(kernel_size),
