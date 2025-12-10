@@ -93,13 +93,61 @@ always_ff @(posedge clk, negedge n_rst) begin   : FIRST_TRANSFER_TRACK
         convulution_in_progress <=  init_trans_latch && !first_trans;
     end
 end 
+
+typedef enum bit [1:0] {
+    IDLE =  2'd0,
+    COMPUTING = 2'd1,
+    COMPLETE =  2'd2,
+    FLAG =  2'd3
+} CONV;
+CONV convState, nextState;
+
+always_ff @(posedge clk, negedge n_rst) begin
+    if (!n_rst) convState <= IDLE;
+    else convState <= nextState;
+end
+
+always_comb begin
+    case (convState)
+        IDLE: begin
+            if (new_trans) nextState = COMPUTING; // Begin computing
+            else nextState = convState;
+            
+            conv_done = 1'b0;
+        end
+        COMPUTING: begin
+            if (end_pos) nextState = COMPLETE; // Move to the last value
+            else nextState = convState;
+
+
+            conv_done = 1'b0;
+        end
+        COMPLETE: begin
+            if (blur_complete) nextState = FLAG; 
+            else nextState = convState;
+
+            conv_done = 1'b0;
+        end
+        FLAG: begin
+            nextState = IDLE;
+
+            conv_done = 1'b1;
+        end
+        default: begin
+            nextState = IDLE;
+
+            conv_done = 1'b0;
+        end
+
+    endcase
+end
 ////    ////    ////    ////    ////    ////    ////    ////    
 
 ////    ////    ////    ////    ////    ////    ////    //// 
 logic compLatch, compLatch_prev, compAck, comp_clear_flag;
 
-logic new_sample_req_in_the_next_cycle;
-assign new_sample_req_in_the_next_cycle = (((compLatch && !compLatch_prev) || init_trans_sample_latch) && new_sample_ready && !new_trans);
+logic new_sample_req_in_the_next_cycle, clear_signal;
+assign new_sample_req_in_the_next_cycle = (((compLatch) || init_trans_sample_latch) && !new_trans);
 
 always_ff @(posedge clk, negedge n_rst) begin
     if(~n_rst) begin 
@@ -110,19 +158,19 @@ always_ff @(posedge clk, negedge n_rst) begin
         end_pos_latch <= 1'b0;
     end
     else begin
-        new_sample_req <= new_sample_req_in_the_next_cycle;
-        compLatch_prev <= compLatch;
+        new_sample_req <= blur_complete;
+        // compLatch_prev <= compLatch;
 
         // end_pos_latch 
         if (end_pos) end_pos_latch <= 1'b1;
         else if (conv_done) end_pos_latch <= 1'b0;
 
         // compLatch or compAck
-        if (blur_complete) begin 
-            compLatch <= 1'b1;
+        if (clear_signal) begin 
+            compLatch <= 1'b0;
             compAck <= 1'b1;
         end
-        else if (new_sample_req) compLatch <= 1'b0;
+        else if (new_sample_req) compLatch <= 1'b1;
         if (comp_clear_flag) compAck <= 1'b0;
     end
 end
@@ -175,7 +223,7 @@ pixel_pos #(.X_MAX(X_MAX), .Y_MAX(Y_MAX), .MODE(0)) image_pos (
     .next_dir(next_dir));
 
 // Output
-assign conv_done = (end_pos && blur_complete);
+
 ////    ////    ////    ////    ////    ////    ////    ////    
 
 ////    ////    ////    ////    ////    ////    ////    ////
@@ -216,6 +264,7 @@ ComputeKernel #(.MAX_KERNEL(MAX_KERNEL)) pixel_blur (
 
     // Other Control
     .clear(compAck),
+    .clear_signal(clear_signal),
     .clear_flag(comp_clear_flag),
     .blurred_pixel(blurred_pixel));
 ////    ////    ////    ////    ////    ////    ////    ////
