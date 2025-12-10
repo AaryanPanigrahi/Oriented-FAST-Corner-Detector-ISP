@@ -15,7 +15,7 @@ module KernelAccumulator #(
 typedef enum bit [1:0] {
     IDLE =  2'd0,
     RESET = 2'd1,
-    MUL0 =  2'd2,
+    COMP_IDLE =  2'd2,
     SUM0 =  2'd3
 } ACCU;
 
@@ -42,27 +42,27 @@ always_ff @(posedge clk, negedge n_rst) begin
 end
 
 always_comb begin : Summing_Logic
-    nextProduct = '0;
+    // nextProduct = '0;
     nextSum = '0;
     case (state)
         IDLE: begin
             nextSum = bufferSum;
-            nextProduct = '0;
+            // nextProduct = '0;
         end
         RESET: begin
             nextSum = '0;
-            nextProduct = '0;
+            // nextProduct = '0;
         end
-        MUL0: begin
+        COMP_IDLE: begin
             nextSum = bufferSum;
-            nextProduct = temp_kv * temp_pv;
+
         end
         SUM0: begin
-            nextSum = bufferSum + product;
+            nextSum = bufferSum + (temp_kv * temp_pv);
         end
         default: begin
             nextSum = bufferSum;
-            nextProduct = '0;
+            // nextProduct = '0;
         end
     endcase
 end
@@ -74,9 +74,9 @@ always_comb begin : Accumulator_Control_FSM
     case (state)
         IDLE: begin
             if (clear) nextState = RESET;
-            else if (start) nextState = MUL0;
+            else if (start) nextState = SUM0;
             else nextState = state;
-            ready = 1'b1;
+            ready = 1'b0;
             clear_flag = 1'b0;
         end
         RESET: begin
@@ -84,13 +84,13 @@ always_comb begin : Accumulator_Control_FSM
             ready = 1'b0;
             clear_flag = 1'b1;
         end
-        MUL0: begin
-            nextState = SUM0;
-            ready = 1'b0;
-            clear_flag = 1'b0;
+        COMP_IDLE: begin
+            if (start) nextState = SUM0;
+            else nextState = IDLE;
+            ready = 1'b1;
         end
         SUM0: begin
-            nextState = IDLE;
+            nextState = COMP_IDLE;
             ready = 1'b0;
             clear_flag = 1'b0;
         end
@@ -101,5 +101,14 @@ always_comb begin : Accumulator_Control_FSM
         end
     endcase
 end
+
+// AccumulatorControl controller (
+//     .clk(clk),
+//     .n_rst(n_rst),
+//     .clear(clear),
+//     .start(start),
+//     .dest(dest),
+//     .ready(ready),
+//     .state(state));
 
 endmodule
