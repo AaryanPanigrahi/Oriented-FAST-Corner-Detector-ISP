@@ -13,13 +13,14 @@ module fast_top_level #(
     input logic [$clog2(X_MAX) - 1:0] max_x, max_y,
 
     output logic write_SRAM4, read_SRAM2,
-    output logic [$clog2(X_MAX):0] x_addr, y_addr, x_addr4, y_addr4
+    output logic [$clog2(X_MAX):0] x_addr, y_addr, x_addr4, y_addr4,
+    output logic [11:0] corner_score
 );
 
 logic [$clog2(X_MAX):0] current_x, current_y;
 logic update_sample_tb, start;
 
-pixel_pos #(.X_MAX(X_MAX), .Y_MAX(Y_MAX)) pos_inst (
+pixel_pos #(.X_MAX(X_MAX), .Y_MAX(Y_MAX), .MODE(1)) pos_inst (
     .clk(clk),
     .n_rst(n_rst),
 
@@ -55,7 +56,8 @@ pipelined_buffer_loader #(.THRESHOLD(THRESHOLD), .X_MAX(X_MAX), .Y_MAX(Y_MAX)) f
     .y_addr4(y_addr4),
     .update_sample(update_sample_tb),
     .read_SRAM2(read_SRAM2),
-    .write_SRAM4(write_SRAM4)
+    .write_SRAM4(write_SRAM4),
+    .corner_score(corner_score)
 );
 
 
