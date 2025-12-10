@@ -89,30 +89,34 @@ module sram_image #(
         
     endfunction
 
-    task automatic dump_img(
-    input string fname,
-    input int xdim,
-    input int ydim
-    );
-        automatic int fd;
-        automatic int ram_idx;
+    localparam int MAX_PIXELS = X_MAX * Y_MAX;
 
-        fd = $fopen(fname, "w");
-        if (fd == 0) $fatal("Cannot open file '%s'", fname);
+    task dump_img(input string fname, input int xdim, input int ydim);
 
+        // STATIC array — required for writememh
+        bit [PIXEL_DEPTH-1:0] temp_img [0:MAX_PIXELS-1];
+
+        int ram_idx;
+        int px_idx;
+
+        // Copy SRAM contents into temp array
         for (int y = 0; y < ydim; y++) begin
             for (int x = 0; x < xdim; x++) begin
-                ram_idx = x + y*X_MAX;
-                $fwrite(fd, "%02x\n", IMAGE_DUT.ram[ram_idx]);
-                $display("urgay");
+                ram_idx = x + (y * X_MAX);
+                px_idx  = x + (y * xdim);
+
+                if (px_idx < MAX_PIXELS)
+                    temp_img[px_idx] = IMAGE_DUT.ram[ram_idx];
+                    $display("urgay");
             end
         end
 
-        $fclose(fd);
+        // Write to hex file (only works with static arrays)
+        $writememh(fname, temp_img, 0, MAX_PIXELS - 1);
+
         $display("SRAM dumped to file '%s'", fname);
+
     endtask
-
-
 
 
 
