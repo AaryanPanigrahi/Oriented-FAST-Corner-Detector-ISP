@@ -56,33 +56,43 @@ logic new_sample_req;
 
 ////    ////    ////    ////    ////    ////    ////    ////    
 // Input Latches
-logic init_trans, init_trans_sample, init_trans_sample_latch, init_trans_kernel, init_trans_kernel_latch;
+logic convulution_in_progress, first_trans, init_trans, init_trans_latch, init_trans_sample, init_trans_sample_latch, init_trans_kernel, init_trans_kernel_latch;
 always_ff @(posedge clk, negedge n_rst) begin
     if (!n_rst) begin
-        init_trans <= 0;
-
         init_trans_sample_latch <= 0;
         init_trans_kernel_latch <= 0;
+        init_trans_latch <= 0;
     end
 
     else begin
-        init_trans <= new_trans || init_trans_sample_latch || init_trans_kernel_latch;
-
+        init_trans_latch <= init_trans;
         init_trans_sample_latch <= init_trans_sample;
         init_trans_kernel_latch <= init_trans_kernel;
     end
-
 end
 
 always_comb begin
+    init_trans        = init_trans_latch && !conv_done;
     init_trans_sample = init_trans_sample_latch && !new_sample_ready;
     init_trans_kernel = init_trans_kernel_latch && !kernel_done;
 
     if (new_trans) begin
+        init_trans = 1;
         init_trans_sample = 1;
         init_trans_kernel = 1;
     end
 end
+
+always_ff @(posedge clk, negedge n_rst) begin   : FIRST_TRANSFER_TRACK
+    if (!n_rst) begin
+        first_trans <= 0;
+        convulution_in_progress <= 0;
+    end
+    else begin 
+        first_trans <= new_trans || init_trans_sample_latch || init_trans_kernel_latch;
+        convulution_in_progress <=  init_trans_latch && !first_trans;
+    end
+end 
 ////    ////    ////    ////    ////    ////    ////    ////    
 
 ////    ////    ////    ////    ////    ////    ////    //// 
@@ -194,7 +204,7 @@ ComputeKernel #(.MAX_KERNEL(MAX_KERNEL)) pixel_blur (
     .clk(clk),
     .n_rst(n_rst),
     // Telemetry
-    .start((new_sample_ready && compLatch)),
+    .start((new_sample_ready && convulution_in_progress)),
     .done(blur_complete),
 
     // Params
