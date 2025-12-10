@@ -1,7 +1,7 @@
 `timescale 1ns / 10ps
 
 module GaussianConv #(
-    parameter MAX_KERNAL = 3,
+    parameter MAX_KERNEL = 3,
     parameter X_MAX = 200,
     parameter Y_MAX = 200,
     parameter PIXEL_DEPTH = 8
@@ -18,7 +18,7 @@ module GaussianConv #(
 
     // Kernel
     input logic [2:0] sigma,
-    input logic [$clog(MAX_KERNAL)-1:0] kernel_size,
+    input logic [$clog2(MAX_KERNEL)-1:0] kernel_size,
 
     // SRAM Input
     output logic [$clog2(X_MAX):0] x_addr_img, 
@@ -36,7 +36,7 @@ module GaussianConv #(
 localparam int MEM_ADDR_W = $clog2(Y_MAX * X_MAX);
 
 // Memory and Kernel
-logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0][PIXEL_DEPTH-1:0] kernel, input_matrix;
+logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][PIXEL_DEPTH-1:0] kernel, input_matrix;
 logic kernel_done;
 
 // Pixel Info
@@ -56,30 +56,30 @@ logic new_sample_req;
 
 ////    ////    ////    ////    ////    ////    ////    ////    
 // Input Latches
-logic init_trans, init_trans_sample1, init_trans_sample1_latch, init_trans_kernel, init_trans_kernel_latch;
+logic init_trans, init_trans_sample, init_trans_sample_latch, init_trans_kernel, init_trans_kernel_latch;
 always_ff @(posedge clk, negedge n_rst) begin
     if (!n_rst) begin
         init_trans <= 0;
 
-        init_trans_sample1_latch <= 0;
+        init_trans_sample_latch <= 0;
         init_trans_kernel_latch <= 0;
     end
 
     else begin
-        init_trans <= new_trans || init_trans_sample1_latch || init_trans_kernel_latch;
+        init_trans <= new_trans || init_trans_sample_latch || init_trans_kernel_latch;
 
-        init_trans_sample1_latch <= init_trans_sample1;
+        init_trans_sample_latch <= init_trans_sample;
         init_trans_kernel_latch <= init_trans_kernel;
     end
 
 end
 
 always_comb begin
-    init_trans_sample1 = init_trans_sample1_latch && !new_sample_ready;
+    init_trans_sample = init_trans_sample_latch && !new_sample_ready;
     init_trans_kernel = init_trans_kernel_latch && !kernel_done;
 
     if (new_trans) begin
-        init_trans_sample1 = 1;
+        init_trans_sample = 1;
         init_trans_kernel = 1;
     end
 end
@@ -89,7 +89,7 @@ end
 logic compLatch, compLatch_prev, compAck, comp_clear_flag;
 
 logic new_sample_req_in_the_next_cycle;
-assign new_sample_req_in_the_next_cycle = (((compLatch && !compLatch_prev) || init_trans_sample1_latch) && new_sample_ready && !new_trans);
+assign new_sample_req_in_the_next_cycle = (((compLatch && !compLatch_prev) || init_trans_sample_latch) && new_sample_ready && !new_trans);
 
 always_ff @(posedge clk, negedge n_rst) begin
     if(~n_rst) begin 
@@ -138,15 +138,18 @@ end
 ////    ////    ////    ////    ////    ////    ////    //// 
 
 ////    ////    ////    ////    ////    ////    ////    ////    
-CreateKernel #(.MAX_KERNAL(MAX_KERNAL)) get_kernel (
+CreateKernel #(.MAX_KERNEL(MAX_KERNEL)) get_kernel (
     .clk(clk),
     .n_rst(n_rst),
+    // Params
     .sigma(sigma),
     .kernel_size(kernel_size),
+    // Telemetry
     .start(new_trans),
-    .kernel(kernel),
-    .donae(kernel_done),
-    .err(err));
+    .done(kernel_done),
+    // Output
+    .err(err),
+    .kernel(kernel));
 ////    ////    ////    ////    ////    ////    ////    ////    
 
 ////    ////    ////    ////    ////    ////    ////    ////
@@ -166,7 +169,7 @@ assign conv_done = (end_pos && blur_complete);
 ////    ////    ////    ////    ////    ////    ////    ////    
 
 ////    ////    ////    ////    ////    ////    ////    ////
-conv_memory #(.MAX_KERNAL(MAX_KERNAL), .PIXEL_DEPTH(PIXEL_DEPTH), .X_MAX(X_MAX), .Y_MAX(Y_MAX)) propogate_buffer (
+conv_memory #(.MAX_KERNEL(MAX_KERNEL), .PIXEL_DEPTH(PIXEL_DEPTH), .X_MAX(X_MAX), .Y_MAX(Y_MAX)) propogate_buffer (
     .clk(clk), .n_rst(n_rst),
     // Start Stop Signals
     .new_trans(new_trans),
@@ -187,14 +190,22 @@ conv_memory #(.MAX_KERNAL(MAX_KERNAL), .PIXEL_DEPTH(PIXEL_DEPTH), .X_MAX(X_MAX),
 ////    ////    ////    ////    ////    ////    ////    ////    
 
 ////    ////    ////    ////    ////    ////    ////    ////
-ComputeKernel #(.SIZE(MAX_KERNAL)) pixel_blur (
+ComputeKernel #(.MAX_KERNEL(MAX_KERNEL)) pixel_blur (
     .clk(clk),
     .n_rst(n_rst),
-    .kernel(kernel),
-    .start((new_sample_ready && !init_trans)),
-    .clear(compAck),
-    .input_matrix(input_matrix),
+    // Telemetry
+    .start((new_sample_ready && compLatch)),
     .done(blur_complete),
+
+    // Params
+    .kernel_size(kernel_size),
+
+    // Memory Input
+    .kernel(kernel),
+    .input_matrix(input_matrix),
+
+    // Other Control
+    .clear(compAck),
     .clear_flag(comp_clear_flag),
     .blurred_pixel(blurred_pixel));
 ////    ////    ////    ////    ////    ////    ////    ////
