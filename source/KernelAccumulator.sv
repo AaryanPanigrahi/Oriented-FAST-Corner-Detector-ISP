@@ -102,13 +102,4 @@ always_comb begin : Accumulator_Control_FSM
     endcase
 end
 
-// AccumulatorControl controller (
-//     .clk(clk),
-//     .n_rst(n_rst),
-//     .clear(clear),
-//     .start(start),
-//     .dest(dest),
-//     .ready(ready),
-//     .state(state));
-
 endmodule
