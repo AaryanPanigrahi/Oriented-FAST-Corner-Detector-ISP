@@ -32,10 +32,10 @@ logic [31:0] denom;
 logic [31:0] N_div;
 logic [31:0] t_div;
 
-logic nextDone, done_future1, done_future2;       // Signals when to stop counting
+logic nextDone, done_future1, done_future2; // Signals when to stop counting
 logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] nextKernel;
 logic [31:0] nextSum;
-logic contConv_latch, contConv;   // Prevents the counter from moving forward until the matrix is ready
+logic contConv_latch, contConv;  // Prevents the counter from moving forward until the matrix is ready
 logic end_pos;
 
 // Lookup table
@@ -45,11 +45,11 @@ initial begin
     real val;
 
     for (i = 0; i < LUT_SIZE; i++) begin
-        x   = i * (8.0 / 256.0);        // convert index → real x
-        val = 100.0 * $exp(-x);        // compute Gaussian
+        x   = i * (8.0 / 256.0);
+        val = 100.0 * $exp(-x); // Compute Gaussian
         if (val < 0.0) val = 0.0;
         if (val > 255.0) val = 255.0;
-        tmp = $rtoi(val);     // store 0–255
+        tmp = $rtoi(val);
         gauss_lut[i] = tmp[7:0];
     end
 end
