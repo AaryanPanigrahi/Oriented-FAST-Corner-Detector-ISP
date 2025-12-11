@@ -1,159 +1,186 @@
 `timescale 1ns / 10ps
 
-module ComputeKernel #(
-    parameter MAX_KERNEL = 3
-)(
+module InitKernel #(
+    parameter MAX_KERNEL = 7
+) (
     input logic clk, n_rst,
-    input logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] input_matrix, kernel,
-    input logic [$clog2(MAX_KERNEL)-1:0] kernel_size,
     input logic start,
-    input logic clear,
-    output logic clear_signal,
-    output logic clear_flag,
-    output logic done,
-    output logic [7:0] blurred_pixel
+    input logic [2:0] sigma,
+    input logic [$clog2(MAX_KERNEL)-1:0] kernel_size,
+    output logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] kernel,
+    output logic [31:0] sum,
+    output logic done
 );
 
-logic readyFlag, readyFlag_prev;  // Ready signal for moving through rows/columns
-logic [$clog2(MAX_KERNEL)-1:0] cur_x, cur_y; // Indexs of the array
-logic contConv;   // Prevents the counter from moving forward until the matrix is ready
-logic [7:0] kernel_v, pixel_v; // Holds the value of the current cell
-logic end_pos, end_pos_prev;
+localparam int FRAC_BITS = 8;
 
-typedef enum bit [1:0] {
-    IDLE =  2'd0,
-    COMPUTING = 2'd1,
-    COMPLETE =  2'd2,
-    FLAG =  2'd3
-} COMP;
-COMP compState, nextState;
+// Lookup Table Logic
+localparam int LUT_BITS = 8;
+localparam int LUT_SIZE = 1 << LUT_BITS;
+logic [7:0] lut_index;
+logic [7:0] gauss_lut [0:LUT_SIZE-1];
 
-always_ff @(posedge clk, negedge n_rst) begin
-    if (!n_rst) readyFlag_prev <= 0;
-    else        readyFlag_prev <= readyFlag;
-end
+// Gaussian Logic
+logic signed [$clog2(MAX_KERNEL):0] calc_x, calc_y, delta_x, delta_y; // The x/y distance from the center
+logic [$clog2(MAX_KERNEL)-1:0] curr_x, prev_x, curr_y, prev_y;
+logic signed [7:0] calc_gauss_curr, calc_gauss; 
+logic signed [$clog2(MAX_KERNEL):0] center;
 
-always_ff @(posedge clk, negedge n_rst) begin
-    if (!n_rst) compState <= IDLE;
-    else compState <= nextState;
-end
+// Division Logic (Q0.8)
+logic [31:0] r2;
+logic [31:0] denom;
+logic [31:0] N_div;
+logic [31:0] t_div;
 
+logic nextDone, done_future1, done_future2; ß// Signals when to stop counting
+logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] nextKernel;
+logic [31:0] nextSum;
+logic contConv_latch, contConv;  // Prevents the counter from moving forward until the matrix is ready
+logic end_pos;
 
-always_comb begin
-    case (compState)
-        IDLE: begin
-            if (start) nextState = COMPUTING; // Begin computing
-            else nextState = compState;
-            
-            clear_signal = 1'b0;
-            contConv = 1'b0;
-            done = 1'b0;
-        end
-        COMPUTING: begin
-            if (end_pos_prev) nextState = COMPLETE; // Move to the last value
-            else nextState = compState;
+// Lookup table
+initial begin
+    integer i, tmp;
+    real x;
+    real val;
 
-            
-            clear_signal = 1'b0;
-            contConv = 1'b1;
-            done = 1'b0;
-        end
-        COMPLETE: begin
-            if (clear_flag) nextState = FLAG; 
-            else nextState = compState;
-
-            clear_signal = 1'b1;
-            contConv = 1'b0;
-            done = 1'b0;
-        end
-            FLAG: begin
-            nextState = IDLE;
-
-
-            clear_signal = 1'b0;
-            contConv = 1'b0;
-            done = 1'b1;
-        end
-        default: begin
-            nextState = IDLE;
-            clear_signal = 1'b0;
-            contConv = 1'b0;
-            done = 1'b0;
-        end
-
-    endcase
-end
-
-
-// assign done = (readyFlag && !readyFlag_prev) && !contConv && end_pos_prev;
- 
-always_ff @(posedge clk, negedge n_rst) begin
-    if (!n_rst) end_pos_prev <= 0;
-    else begin
-        end_pos_prev <= end_pos;
+    for (i = 0; i < LUT_SIZE; i++) begin
+        x   = i * (8.0 / 256.0);
+        val = 100.0 * $exp(-x); // Compute Gaussian
+        if (val < 0.0) val = 0.0;
+        if (val > 255.0) val = 255.0;
+        tmp = $rtoi(val); ß
+        gauss_lut[i] = tmp[7:0];
     end
 end
 
 
-// always_ff @(posedge clk, negedge n_rst) begin : Computation_FF
-//     if (~n_rst) begin
-//         contConv <= 1'b0;
-//     end
-//     else begin
-//         if (end_pos_prev) contConv <= 1'b0;
-//         if (start) contConv <= 1'b1;
-//     end
-// end
-
-logic single_pulse_start, start_prev;
 always_ff @(posedge clk, negedge n_rst) begin
-    if (!n_rst) start_prev <= 0;
-    else start_prev <= start;
+    if(!n_rst) contConv_latch <= 0;
+
+    else begin
+        contConv_latch <= contConv && !end_pos;
+    end
 end
 
-assign single_pulse_start = start && !start_prev;
+always_comb begin
+    contConv = contConv_latch;
+    if (start) contConv = 1;
+end
 
-pixel_pos #(.X_MAX(MAX_KERNEL), .Y_MAX(MAX_KERNEL), .MODE(1)) get_position (
+always_ff @(posedge clk, negedge n_rst) begin
+    if (!n_rst) begin
+        done <= 0;
+        done_future2 <= 0;
+        done_future1 <= 0;
+        sum <= 0;
+    end
+    else begin
+        done_future2 <= nextDone;
+        done_future1 <= done_future2;
+        done         <= done_future1;
+        sum <= nextSum;
+    end
+end
+
+always_comb begin
+    nextDone = 0;
+    if (end_pos && contConv) nextDone = 1'b1;
+end
+
+logic [$clog2(MAX_KERNEL)-1:0] idx_x, idx_x2, idx_y, idx_y2;
+always_ff @(posedge clk, negedge n_rst) begin
+    if(~n_rst) begin
+        for (idx_y = 0; idx_y < MAX_KERNEL; idx_y++) begin
+            for (idx_x = 0; idx_x < MAX_KERNEL; idx_x++) begin
+                kernel[idx_x][idx_y][7:0] <= '0;
+            end
+        end
+    end
+
+    else begin
+        if (done_future1) kernel <= nextKernel;
+    end 
+end
+
+pixel_pos #(.X_MAX(MAX_KERNEL), .Y_MAX(MAX_KERNEL), .MODE(1)) kernel_pos (
     .clk(clk), .n_rst(n_rst),
-    // Update
-    .new_trans(single_pulse_start),
-    .update_pos(readyFlag && contConv),
-    // Positiom
-    .max_x(kernel_size), 
-    .max_y(kernel_size),
-    .curr_x(cur_x),
-    .curr_y(cur_y), 
-    .end_pos(end_pos), 
+    .new_trans(start),
+    .update_pos((contConv)),
+    .max_x(kernel_size),          
+    .max_y(kernel_size),         
+    .curr_x(curr_x),
+    .curr_y(curr_y),
+    .end_pos(end_pos),
     .next_dir());
 
-KernelAccumulator get_accumulator (
-    .clk(clk),
-    .n_rst(n_rst),
-    // Kernel Value
-    .kernel_v(kernel_v),
-    .pixel_v(pixel_v),
-    // IO
-    .start(contConv),
-    .clear(clear),
-    .ready(readyFlag),
-    .clear_flag(clear_flag),
-    // Out
-    .sum(blurred_pixel));
+always_comb begin
+    // Ditance calc
+    center  = ($signed({1'b0, kernel_size}) - $signed(4'd1)) >>> 1;
+    delta_x = $signed({1'b0, curr_x}) - center;
+    delta_y = $signed({1'b0, curr_y}) - center;
+    calc_x = (delta_x >= 0) ? delta_x : -delta_x;
+    calc_y = (delta_y >= 0) ? delta_y : -delta_y;
 
-MatrixIndex #(.MAX_KERNEL(MAX_KERNEL)) get_index (
-    .clk(clk),
-    .n_rst(n_rst),
-    // Position
-    .cur_x(cur_x),
-    .cur_y(cur_y),
-    // Input Array
-    .kernel(kernel),
-    .in(input_matrix),
-    // Enable
-    .en_strobe(readyFlag),
-    // Out
-    .kernel_v(kernel_v),
-    .pixel_v(pixel_v));
+    // Gaussian formula
+    r2    = calc_x * calc_x + calc_y * calc_y;
+    denom = 2 * sigma * sigma;
 
+    N_div = r2 << FRAC_BITS;
+    t_div = (N_div + (denom>>1)) / denom;
+
+    if (t_div >= (8 << FRAC_BITS))
+        lut_index = 8'hFF;  
+    else
+        lut_index = t_div[10:3];  
+    
+    calc_gauss = gauss_lut[lut_index];
+
+    // Accumulator
+    nextSum = sum;
+    if(contConv && !nextDone) begin
+        nextSum = sum + calc_gauss[7:0];
+    end
+end
+
+always_ff @(posedge clk, negedge n_rst) begin
+    if (!n_rst) begin
+        prev_x <= '0;
+        prev_y <= '0;
+    end
+
+    else begin
+        prev_x <= curr_x;
+        prev_y <= curr_y;
+    end
+end
+
+always_ff @(posedge clk, negedge n_rst) begin
+    if (!n_rst) begin
+        calc_gauss_curr <= '0;
+
+        // Reset Vals
+        for (idx_y2 = 0; idx_y2 < MAX_KERNEL; idx_y2++) begin
+            for (idx_x2 = 0; idx_x2 < MAX_KERNEL; idx_x2++) begin
+                nextKernel[idx_x2][idx_y2][7:0] <= '0;
+            end
+        end
+    end
+
+    else begin
+        calc_gauss_curr <= calc_gauss;
+
+        // Reset Module
+        if (start) begin
+            for (idx_y2 = 0; idx_y2 < MAX_KERNEL; idx_y2++) begin
+                for (idx_x2 = 0; idx_x2 < MAX_KERNEL; idx_x2++) begin
+                    nextKernel[idx_x2][idx_y2][7:0] <= '0;
+                end
+            end
+        end
+
+        else nextKernel[prev_x][prev_y][7:0] <= calc_gauss_curr[7:0];
+    end
+end
 
 endmodule
