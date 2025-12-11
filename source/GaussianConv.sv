@@ -33,7 +33,7 @@ module GaussianConv #(
     output logic [PIXEL_DEPTH-1:0] wdat_conv
 );
 ////    ////    ////    ////    ////    ////    ////    ////    
-localparam int MEM_ADDR_W = $clog2(Y_MAX * X_MAX);
+// localparam int MEM_ADDR_W = $clog2(Y_MAX * X_MAX);
 
 // Memory and Kernel
 logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][PIXEL_DEPTH-1:0] kernel, input_matrix;
@@ -146,8 +146,9 @@ end
 ////    ////    ////    ////    ////    ////    ////    //// 
 logic compLatch, compLatch_prev, compAck, comp_clear_flag;
 
-logic new_sample_req_in_the_next_cycle, clear_signal;
-assign new_sample_req_in_the_next_cycle = (((compLatch) || init_trans_sample_latch) && !new_trans);
+logic new_sample_req_in_the_next_cycle;
+logic clear_signal;
+// assign new_sample_req_in_the_next_cycle = (((compLatch) || init_trans_sample_latch) && !new_trans);
 
 always_ff @(posedge clk, negedge n_rst) begin
     if(~n_rst) begin 
