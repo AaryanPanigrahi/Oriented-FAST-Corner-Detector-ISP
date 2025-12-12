@@ -6,30 +6,29 @@ add wave -noupdate -group SRAM2 -label x_addr_test -radix unsigned -radixshowbas
 add wave -noupdate -group SRAM2 -label y_addr_test -radix unsigned -radixshowbase 0 /tb_conv_memory/y_addr_test
 add wave -noupdate -group SRAM2 -label ren_test -radix unsigned -radixshowbase 0 /tb_conv_memory/ren_test
 add wave -noupdate -group SRAM2 -label rdat_test -radix unsigned -radixshowbase 0 /tb_conv_memory/rdat_test
-add wave -noupdate -group {IMG Param} -label kernel_size -radix unsigned -radixshowbase 0 /tb_conv_memory/kernel_size
+add wave -noupdate -expand -group {IMG Param} -label kernel_size -radix unsigned -radixshowbase 0 /tb_conv_memory/kernel_size
+add wave -noupdate -expand -group {Gaussian Conv} -label new_trans -radix unsigned -radixshowbase 0 /tb_conv_memory/new_trans
 add wave -noupdate -expand -group {Gaussian Conv} -label new_sample_req -radix unsigned -radixshowbase 0 /tb_conv_memory/new_sample_req
 add wave -noupdate -expand -group {Gaussian Conv} -label new_sample_ready -radix unsigned -radixshowbase 0 /tb_conv_memory/new_sample_ready
-add wave -noupdate -expand -group {Gaussian Conv} -expand -group {Gaussian Out} -label new_sample_ready_w -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/new_sample_ready_w
-add wave -noupdate -expand -group {Gaussian Conv} -expand -group {Gaussian Out} -label new_sample_ready_int -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/new_sample_ready_int
-add wave -noupdate -expand -group {Gaussian Conv} -expand -group {Gaussian Out} -label new_sample_req_prev -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/new_sample_req_prev
-add wave -noupdate -expand -group {Gaussian Conv} -expand -group {Gaussian Out} -label sample_updater -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/sample_updater
-add wave -noupdate -expand -group {Gaussian Conv} -expand -group {Gaussian Out} -label sample_updater_int /tb_conv_memory/GAUSSIAN_MEM/sample_updater_int
-add wave -noupdate -expand -group Pixel_pos -label new_trans -radix unsigned -radixshowbase 0 /tb_conv_memory/new_trans
-add wave -noupdate -expand -group Pixel_pos -label curr_x -radix unsigned -radixshowbase 0 /tb_conv_memory/curr_x
-add wave -noupdate -expand -group Pixel_pos -label curr_y -radix unsigned -radixshowbase 0 /tb_conv_memory/curr_y
-add wave -noupdate -expand -group Pixel_pos -label next_dir -radix binary -radixshowbase 0 /tb_conv_memory/next_dir
-add wave -noupdate -expand -group Pixel_pos -group Extra -label max_x -radix unsigned -radixshowbase 0 /tb_conv_memory/max_x
-add wave -noupdate -expand -group Pixel_pos -group Extra -label max_y -radix unsigned -radixshowbase 0 /tb_conv_memory/max_y
-add wave -noupdate -expand -group Pixel_pos -group Extra -label next_move /tb_conv_memory/next_move
-add wave -noupdate -expand -group SRAM -label x_addr_img -radix unsigned -radixshowbase 0 /tb_conv_memory/x_addr_img
-add wave -noupdate -expand -group SRAM -label y_addr_img -radix unsigned -radixshowbase 0 /tb_conv_memory/y_addr_img
-add wave -noupdate -expand -group SRAM -label ren_img -radix unsigned -radixshowbase 0 /tb_conv_memory/ren_img
-add wave -noupdate -expand -group SRAM -label rdat_img /tb_conv_memory/rdat_img
+add wave -noupdate -expand -group {Gaussian Conv} -group {Gaussian Out} -label new_sample_ready_w -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/new_sample_ready_w
+add wave -noupdate -expand -group {Gaussian Conv} -group {Gaussian Out} -label new_sample_req_prev -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/new_sample_req_prev
+add wave -noupdate -expand -group {Gaussian Conv} -group {Gaussian Out} -label sample_updater -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/sample_updater
+add wave -noupdate -expand -group {Gaussian Conv} -group {Gaussian Out} -label sample_updater_int /tb_conv_memory/GAUSSIAN_MEM/sample_updater_int
+add wave -noupdate -group Pixel_pos -label curr_x -radix unsigned -radixshowbase 0 /tb_conv_memory/curr_x
+add wave -noupdate -group Pixel_pos -label curr_y -radix unsigned -radixshowbase 0 /tb_conv_memory/curr_y
+add wave -noupdate -group Pixel_pos -label next_dir -radix binary -radixshowbase 0 /tb_conv_memory/next_dir
+add wave -noupdate -group Pixel_pos -group Extra -label max_x -radix unsigned -radixshowbase 0 /tb_conv_memory/max_x
+add wave -noupdate -group Pixel_pos -group Extra -label max_y -radix unsigned -radixshowbase 0 /tb_conv_memory/max_y
+add wave -noupdate -group Pixel_pos -group Extra -label next_move /tb_conv_memory/next_move
+add wave -noupdate -group SRAM -label x_addr_img -radix unsigned -radixshowbase 0 /tb_conv_memory/x_addr_img
+add wave -noupdate -group SRAM -label y_addr_img -radix unsigned -radixshowbase 0 /tb_conv_memory/y_addr_img
+add wave -noupdate -group SRAM -label ren_img -radix unsigned -radixshowbase 0 /tb_conv_memory/ren_img
+add wave -noupdate -group SRAM -label rdat_img /tb_conv_memory/rdat_img
 add wave -noupdate -expand -group Memory -expand -group {Memory Edges} -label first -radix hexadecimal -radixshowbase 0 /tb_conv_memory/first
 add wave -noupdate -expand -group Memory -expand -group {Memory Edges} -label bottom_left -radix hexadecimal -radixshowbase 0 /tb_conv_memory/bottom_left
 add wave -noupdate -expand -group Memory -expand -group {Memory Edges} -label top_right -radix hexadecimal -radixshowbase 0 /tb_conv_memory/top_right
 add wave -noupdate -expand -group Memory -expand -group {Memory Edges} -label last -radix hexadecimal -childformat {{{/tb_conv_memory/last[7]} -radix hexadecimal} {{/tb_conv_memory/last[6]} -radix hexadecimal} {{/tb_conv_memory/last[5]} -radix hexadecimal} {{/tb_conv_memory/last[4]} -radix hexadecimal} {{/tb_conv_memory/last[3]} -radix hexadecimal} {{/tb_conv_memory/last[2]} -radix hexadecimal} {{/tb_conv_memory/last[1]} -radix hexadecimal} {{/tb_conv_memory/last[0]} -radix hexadecimal}} -radixshowbase 0 -subitemconfig {{/tb_conv_memory/last[7]} {-height 16 -radix hexadecimal -radixshowbase 0} {/tb_conv_memory/last[6]} {-height 16 -radix hexadecimal -radixshowbase 0} {/tb_conv_memory/last[5]} {-height 16 -radix hexadecimal -radixshowbase 0} {/tb_conv_memory/last[4]} {-height 16 -radix hexadecimal -radixshowbase 0} {/tb_conv_memory/last[3]} {-height 16 -radix hexadecimal -radixshowbase 0} {/tb_conv_memory/last[2]} {-height 16 -radix hexadecimal -radixshowbase 0} {/tb_conv_memory/last[1]} {-height 16 -radix hexadecimal -radixshowbase 0} {/tb_conv_memory/last[0]} {-height 16 -radix hexadecimal -radixshowbase 0}} /tb_conv_memory/last
-add wave -noupdate -expand -group Memory -label working_memory -expand -subitemconfig {{/tb_conv_memory/working_memory[2]} -expand {/tb_conv_memory/working_memory[1]} -expand {/tb_conv_memory/working_memory[0]} -expand} /tb_conv_memory/working_memory
+add wave -noupdate -expand -group Memory -label working_memory -subitemconfig {{/tb_conv_memory/working_memory[2]} -expand {/tb_conv_memory/working_memory[1]} -expand {/tb_conv_memory/working_memory[0]} -expand} /tb_conv_memory/working_memory
 add wave -noupdate -expand -group Memory -label ram /tb_conv_memory/IMAGE_RAM/IMAGE_DUT/ram
 add wave -noupdate -group Internal -expand -group {Reg Busses} -label reg_bus_out -expand -subitemconfig {{/tb_conv_memory/GAUSSIAN_MEM/reg_bus_out[4]} -expand {/tb_conv_memory/GAUSSIAN_MEM/reg_bus_out[3]} -expand {/tb_conv_memory/GAUSSIAN_MEM/reg_bus_out[2]} -expand {/tb_conv_memory/GAUSSIAN_MEM/reg_bus_out[1]} -expand {/tb_conv_memory/GAUSSIAN_MEM/reg_bus_out[0]} -expand} /tb_conv_memory/GAUSSIAN_MEM/reg_bus_out
 add wave -noupdate -group Internal -expand -group {Reg Busses} -label reg_bus_le /tb_conv_memory/GAUSSIAN_MEM/reg_bus_le
@@ -65,9 +64,9 @@ add wave -noupdate -group Internal -group {First Trans Pixel Pos} -label first_t
 add wave -noupdate -group Internal -group {First Trans Pixel Pos} -label first_trans_flag_prev -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/first_trans_flag_prev
 add wave -noupdate -group Internal -group {First Trans Pixel Pos} -label first_end_pos -radix unsigned -radixshowbase 0 /tb_conv_memory/GAUSSIAN_MEM/first_end_pos
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {793739 ps} 0}
+WaveRestoreCursors {{Cursor 1} {3617310 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 495
+configure wave -namecolwidth 232
 configure wave -valuecolwidth 40
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
@@ -81,4 +80,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {752985 ps} {874194 ps}
+WaveRestoreZoom {3556106 ps} {3943155 ps}
