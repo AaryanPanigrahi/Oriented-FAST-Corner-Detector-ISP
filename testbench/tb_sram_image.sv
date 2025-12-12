@@ -4,7 +4,7 @@ module tb_sram_image;
     localparam X_MAX = 200;
     localparam Y_MAX = 200;
     localparam PIXEL_DEPTH = 8;
-    localparam DUAL = 0;
+    localparam DUAL = 1;
 
     // Signals
     logic                       clk;
@@ -73,8 +73,9 @@ module tb_sram_image;
         y_addr <= y;
         wen  <= 0;
         ren  <= 1;
-        //@(posedge clk);            // sync read: data valid after this edge
-        //ren <= 0;
+
+        // @(posedge clk);            // sync read: data valid after this edge
+        // ren <= 0;
     endtask
 
     // Aux
@@ -100,7 +101,7 @@ module tb_sram_image;
     begin
         x_addr = '0; 
         y_addr = '0; 
-        wdat = '0; 
+        wdat <= '0; 
         wen = 0; 
         ren = 0;    
 

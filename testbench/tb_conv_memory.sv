@@ -2,7 +2,7 @@
 
 module tb_conv_memory;
     // Kernel Params
-    parameter MAX_KERNAL = 3;
+    parameter MAX_KERNEL = 9;
     parameter PIXEL_DEPTH = 8;
 
     // RAM Image
@@ -35,7 +35,7 @@ module tb_conv_memory;
 
     // to gaussian conv
     logic new_sample_ready;
-    logic [MAX_KERNAL-1:0][MAX_KERNAL-1:0] [PIXEL_DEPTH - 1:0] working_memory;
+    logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0] [PIXEL_DEPTH - 1:0] working_memory;
 
     // Custom
     logic [PIXEL_DEPTH-1:0]     first, last, top_right, bottom_left;
@@ -61,7 +61,7 @@ module tb_conv_memory;
 
     // DUT instance
     conv_memory #(
-        .MAX_KERNAL (MAX_KERNAL),
+        .MAX_KERNEL (MAX_KERNEL),
         .X_MAX      (X_MAX),
         .Y_MAX      (Y_MAX),
         .PIXEL_DEPTH(PIXEL_DEPTH)
@@ -212,7 +212,7 @@ module tb_conv_memory;
 
     task automatic run_conv(input logic [$clog2(X_MAX):0] x_dim,
                            input logic [$clog2(Y_MAX):0] y_dim,
-                           input logic [$clog2(MAX_KERNAL):0] k_size);
+                           input logic [$clog2(MAX_KERNEL):0] k_size);
     begin
         kernel_size = k_size;
         max_x = x_dim;

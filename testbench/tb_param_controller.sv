@@ -1,7 +1,6 @@
 `timescale 1ns/1ps
 
 module tb_param_controller;
-
     localparam ADDR_WIDTH = 8;
     localparam DATA_WIDTH = 8;
     localparam NUM_PARAMS = 8;
@@ -11,16 +10,16 @@ module tb_param_controller;
     logic clk, n_rst;
 
     // SRAM ⇄ controller interface
-    logic [$clog2(NUM_PARAMS)-1:0] addr_params, addr_write_params;
-    logic                          ren_params, wen_params;
-    logic [DATA_WIDTH-1:0]         rdat_params, wdat_params;
+    logic [$clog2(NUM_PARAMS)-1:0]  addr_params, addr_write_params;
+    logic                           ren_params, wen_params;
+    logic [DATA_WIDTH-1:0]          rdat_params, wdat_params;
 
-    logic                          new_trans;
-    logic                          img_done;
-    logic [$clog2(X_MAX)-1:0] max_x;
-    logic [$clog2(Y_MAX)-1:0] max_y;
-    logic [7:0]                    kernel_size;
-    logic [2:0]                    sigma;
+    logic                           new_trans;
+    logic                           img_done;
+    logic [$clog2(X_MAX)-1:0]       max_x;
+    logic [$clog2(Y_MAX)-1:0]       max_y;
+    logic [7:0]                     kernel_size;
+    logic [2:0]                     sigma;
 
     // Expand controller addresses to full SRAM width
     logic [ADDR_WIDTH-1:0] addr, addr_write;

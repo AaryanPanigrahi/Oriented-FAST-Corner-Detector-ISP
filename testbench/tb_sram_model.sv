@@ -4,7 +4,7 @@ module tb_sram_model;
 
     localparam ADDR_WIDTH = 8;
     localparam DATA_WIDTH = 32;
-    localparam DUAL = 1;
+    localparam DUAL = 0;
 
     // Signals
     logic                   clk;
