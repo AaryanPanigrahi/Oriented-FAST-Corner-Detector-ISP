@@ -11,7 +11,7 @@ module fast_controller #(
     input  logic fast_done_flag,    // FAST unit done
     input  logic circle_done_flag,
 
-    output logic fast_start, circle_start          // Trigger FAST
+    output logic fast_start, circle_start, done          // Trigger FAST
 );
 
 typedef enum logic [2:0] {
@@ -56,6 +56,7 @@ always_comb begin
 
     fast_start      = 1'b0;
     circle_start = 0;
+    done = 0;
 
     gaus_count_next = gaus_count_ff;
     if (gaus_sample_flag)
@@ -128,6 +129,7 @@ always_comb begin
         S_DONE: begin
             fast_start = 1'b0;
             circle_start = 0;
+            done = 1;
         end
     endcase
 end

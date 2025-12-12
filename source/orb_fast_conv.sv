@@ -1,12 +1,19 @@
 `timescale 1ns / 10ps
 
 module orb_fast_conv #(
-    parameter NUM_PARAMS = 8,
-    parameter PARAM_DEPTH = 8,
-    parameter MAX_KERNEL = 31,
+    // Image
     parameter X_MAX = 400,
     parameter Y_MAX = 400,
-    parameter PIXEL_DEPTH = 8
+    parameter PIXEL_DEPTH = 8,
+
+    // Params
+    parameter NUM_PARAMS = 8,
+    parameter PARAM_DEPTH = 8,
+
+    // Gaussian
+    parameter MAX_KERNEL = 31,
+    // Fast
+    parameter THRESHOLD = 20
 ) (
     // Sync
     input logic clk, n_rst,
@@ -46,7 +53,16 @@ module orb_fast_conv #(
     output logic x_addr_fast, 
     output logic y_addr_fast,
     output logic wen_fast,
-    output logic wdat_fast
+    output logic wdat_fast,
+    // FAST input
+    output logic ren_fast,
+    input logic rdat_fast,
+
+    // Circle Out
+    output logic [$clog2(X_MAX):0] x_addr_circle, 
+    output logic [$clog2(Y_MAX):0] y_addr_circle,
+    output logic wen_circle,
+    output logic [PIXEL_DEPTH-1:0] wdat_circle
 );
 
     // Global
@@ -58,7 +74,6 @@ module orb_fast_conv #(
 
     // Gaussian 
     logic conv_done, pixel_done;
-    assign img_done = conv_done;           // <<<< ---- change
 
     ////    ////    ////    ////    ////    ////    ////    
     // Control Inputs
@@ -80,7 +95,7 @@ module orb_fast_conv #(
         .wdat_params      (wdat_params),
         // Output Signals
         .new_trans        (new_trans),
-        .img_done         (conv_done),
+        .img_done         (img_done),
         .max_x            (max_x),
         .max_y            (max_y),
         .kernel_size      (kernel_size),
@@ -90,16 +105,21 @@ module orb_fast_conv #(
 
     ////    ////    ////    ////    ////    ////    ////  
     // Perform Gaussian Convolution
-    GaussianConv #(.MAX_KERNEL(MAX_KERNEL), .X_MAX(X_MAX), .Y_MAX(Y_MAX), .PIXEL_DEPTH(PIXEL_DEPTH)) DUT (
+    GaussianConv #(.MAX_KERNEL(MAX_KERNEL), .X_MAX(X_MAX), .Y_MAX(Y_MAX), .PIXEL_DEPTH(PIXEL_DEPTH)) GAUSS_COMP (
         .clk(clk), .n_rst(n_rst),
+
         // Kernel 
         .kernel_size(kernel_size),
         .sigma(sigma),
+
         // Pixel Pos
         .max_x(max_x),
         .max_y(max_y),
-        // Starting Signals
+        // Control
         .new_trans(new_trans),
+        .pixel_done(pixel_done),
+        .conv_done(conv_done),
+
         // INPUT Image
         .x_addr_img(x_addr_img), 
         .y_addr_img(y_addr_img), 
@@ -109,12 +129,49 @@ module orb_fast_conv #(
         .x_addr_conv(x_addr_conv), 
         .y_addr_conv(y_addr_conv),
         .wen_conv(wen_conv),
-        .wdat_conv(wdat_conv),
-        // Convolution Signals
-        .conv_done(conv_done),
-        .pixel_done(pixel_done)
+        .wdat_conv(wdat_conv)
     );
-     ////    ////    ////    ////    ////    ////    ////        
+     ////    ////    ////    ////    ////    ////    //// 
+
+    ////    ////    ////    ////    ////    ////    ////
+    fast_top_level #(.X_MAX(X_MAX), .Y_MAX(Y_MAX), .THRESHOLD(THRESHOLD)) FAST_COMP (
+        // sync
+        .clk(clk),
+        .n_rst(n_rst),
+
+        // Control
+        .new_trans(new_trans),
+        .gaus_sample_flag(pixel_done),
+        .gaus_done(conv_done),
+        .done(img_done),
+
+        //Signals
+        .max_x(max_x),
+        .max_y(max_y),
+
+        // Read From Gauss
+        .x_addr_gaus(x_addr_conv_fast),
+        .y_addr_gaus(y_addr_conv_fast),
+        .read_SRAM_gaus(ren_conv_fast),
+        .SRAM_in_gaus(rdat_conv_fast),
+
+        // Fast 1 bit Write
+        .x_addr_fast(x_addr_fast),
+        .y_addr_fast(y_addr_fast),
+        .write_SRAM_fast(wen_fast),
+        // 1 Bit Read
+        .read_SRAM_fast(ren_fast),
+        .SRAM_in_fast(rdat_fast),
+
+        // Make Circles
+        .x_addr_OUT(x_addr_circle),
+        .y_addr_OUT(y_addr_circle),
+        .write_SRAM_OUT(wen_circle),
+        .SRAM_OUT_wdata(wdat_circle)
+    );       
+
+    assign wdat_fast = 1;
+    ////    ////    ////    ////    ////    ////    ////
 
 
 endmodule

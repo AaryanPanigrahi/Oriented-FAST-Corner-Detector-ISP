@@ -12,7 +12,7 @@ module fast_top_level #(
     input logic new_trans, SRAM_in_fast,
     input logic [$clog2(X_MAX) - 1:0] max_x, max_y,
 
-    output logic write_SRAM_fast, read_SRAM_gaus, read_SRAM_fast, write_SRAM_OUT,
+    output logic write_SRAM_fast, read_SRAM_gaus, read_SRAM_fast, write_SRAM_OUT, done,
     output logic [$clog2(X_MAX):0] x_addr_gaus, y_addr_gaus, x_addr_fast, y_addr_fast, x_addr_OUT, y_addr_OUT,
     output logic [23:0] SRAM_OUT_wdata
 );
@@ -47,7 +47,8 @@ fast_controller #(.WIDTH(X_MAX)) fast_controller(
     .fast_done_flag(update_sample_tb),
     .fast_start(start),
     .circle_done_flag(update_sample_tb),
-    .circle_start(start_circle)
+    .circle_start(start_circle),
+    .done(done)
 );
 
 pipelined_buffer_loader #(.THRESHOLD(THRESHOLD), .X_MAX(X_MAX), .Y_MAX(Y_MAX)) fast_compute (
