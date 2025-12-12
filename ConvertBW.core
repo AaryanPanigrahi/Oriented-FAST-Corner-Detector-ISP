@@ -1,5 +1,5 @@
 CAPI=2:
-name: "u337mg005:ece337:ConvertBW:1.0.0"
+name: "u337mg015:ece337:ConvertBW:1.0.0"
 description: ""
 
 filesets:
@@ -7,29 +7,34 @@ filesets:
         files:
             - "source/ConvertBW.sv"
         file_type: systemVerilogSource
-        # depend:
-        #     - "fusesoc:core:name"
         depend:
-            - "u337mg005:ece337:ComputeBW"
-            - "u337mg005:ece337:pixel_pos"
-            - "u337mg005:ece337:sram_image"
+            - "u337mg015:ece337:color_to_bw:1.0.0"
+            - "u337mg015:ece337:pixel_pos:1.0.0"
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg005:ece337:ConvertBW_syn"
+            - "u337mg015:ece337:ConvertBW_syn"
 
     tb:
         files:
             - "testbench/tb_ConvertBW.sv"
             - "waves/ConvertBW.do": { file_type: user }
             - "waves/ConvertBW.gtkw": { file_type: user }
-            # - "data/file.txt": { file_type: user }
+            
+            - "source/sram_image.sv"                  
+            - "testbench/tb_sram_image.sv"          
+
+            - "source/sram_model.sv" 
+            - "testbench/tb_sram_model.sv" 
+
+            - "image/rongbo.hex": { file_type: user }
+        
         file_type: systemVerilogSource
 
     synfiles:
         depend:
-            - "u337mg005:ece337:synfiles"
+            - "u337mg015:ece337:synfiles"
 
 targets:
     default: &default
@@ -85,7 +90,7 @@ targets:
         toplevel: ConvertBW
         tools:
             design_compiler:
-                script_dir: "src/u337mg005_ece337_synfiles_0"
+                script_dir: "src/u337mg015_ece337_synfiles_0"
                 dc_script: "synth.tcl"
                 report_dir: "reports"
                 target_library: "/home/ecegrid/a/ece337/summer24-refactor/tech/ami05/osu05_stdcells.db"

@@ -1,11 +1,11 @@
 CAPI=2:
-name: "u337mg015:ece337:ComputeBW:1.0.0"
+name: "u337mg015:ece337:color_to_bw:1.0.0"
 description: ""
 
 filesets:
     rtl:
         files:
-            - "source/ComputeBW.sv"
+            - "source/color_to_bw.sv"
         file_type: systemVerilogSource
         # depend:
         #     - "fusesoc:core:name"
@@ -13,14 +13,13 @@ filesets:
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg015:ece337:ComputeBW_syn"
+            - "u337mg015:ece337:color_to_bw_syn"
 
     tb:
         files:
-            - "testbench/tb_ComputeBW.sv"
-            - "waves/ComputeBW.do": { file_type: user }
-            - "waves/ComputeBW.gtkw": { file_type: user }
-            # - "data/file.txt": { file_type: user }
+            - "testbench/tb_color_to_bw.sv"
+            - "waves/color_to_bw.do": { file_type: user }
+            - "waves/color_to_bw.gtkw": { file_type: user }
         file_type: systemVerilogSource
 
     synfiles:
@@ -31,21 +30,21 @@ targets:
     default: &default
         filesets:
             - rtl
-        toplevel: ComputeBW
+        toplevel: color_to_bw
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_ComputeBW
+        toplevel: tb_color_to_bw
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/ComputeBW.do
+                    - -do waves/color_to_bw.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -78,7 +77,7 @@ targets:
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: ComputeBW
+        toplevel: color_to_bw
         tools:
             design_compiler:
                 script_dir: "src/u337mg015_ece337_synfiles_0"

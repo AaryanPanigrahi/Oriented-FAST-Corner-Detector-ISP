@@ -1,11 +1,11 @@
 CAPI=2:
-name: "u337mg015:ece337:ComputeBW:1.0.0"
+name: "u337mg015:ece337:fast_controller:1.0.0"
 description: ""
 
 filesets:
     rtl:
         files:
-            - "source/ComputeBW.sv"
+            - "source/fast_controller.sv"
         file_type: systemVerilogSource
         # depend:
         #     - "fusesoc:core:name"
@@ -13,13 +13,13 @@ filesets:
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg015:ece337:ComputeBW_syn"
+            - "u337mg015:ece337:fast_controller_syn"
 
     tb:
         files:
-            - "testbench/tb_ComputeBW.sv"
-            - "waves/ComputeBW.do": { file_type: user }
-            - "waves/ComputeBW.gtkw": { file_type: user }
+            - "testbench/tb_fast_controller.sv"
+            - "waves/fast_controller.do": { file_type: user }
+            - "waves/fast_controller.gtkw": { file_type: user }
             # - "data/file.txt": { file_type: user }
         file_type: systemVerilogSource
 
@@ -31,21 +31,21 @@ targets:
     default: &default
         filesets:
             - rtl
-        toplevel: ComputeBW
+        toplevel: fast_controller
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_ComputeBW
+        toplevel: tb_fast_controller
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/ComputeBW.do
+                    - -do waves/fast_controller.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -78,7 +78,7 @@ targets:
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: ComputeBW
+        toplevel: fast_controller
         tools:
             design_compiler:
                 script_dir: "src/u337mg015_ece337_synfiles_0"

@@ -1,25 +1,37 @@
 CAPI=2:
-name: "u337mg015:ece337:ComputeBW:1.0.0"
+name: "u337mg015:ece337:fast_pixel_pos:1.0.0"
 description: ""
 
 filesets:
     rtl:
         files:
-            - "source/ComputeBW.sv"
+            - "source/fast_pixel_pos.sv"
         file_type: systemVerilogSource
-        # depend:
-        #     - "fusesoc:core:name"
+        depend:
+            - "u337mg015:ece337:flex_counter_dir:1.0.0"
+            - "u337mg015:ece337:pixel_pos:1.0.0"
+            - "u337mg015:ece337:pipelined_buffer_loader:1.0.0"
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg015:ece337:ComputeBW_syn"
+            - "u337mg015:ece337:fast_pixel_pos_syn"
 
     tb:
         files:
-            - "testbench/tb_ComputeBW.sv"
-            - "waves/ComputeBW.do": { file_type: user }
-            - "waves/ComputeBW.gtkw": { file_type: user }
+            - "testbench/tb_fast_pixel_pos.sv"
+
+            - "source/sram_image.sv"                  
+            - "testbench/tb_sram_image.sv"          
+
+            - "source/sram_model.sv" 
+            - "testbench/tb_sram_model.sv"   
+
+            - "waves/fast_pixel_pos.do": { file_type: user }
+            - "waves/fast_pixel_pos.gtkw": { file_type: user }
+
+            - "image/testing.hex": { file_type: user }
+
             # - "data/file.txt": { file_type: user }
         file_type: systemVerilogSource
 
@@ -31,21 +43,21 @@ targets:
     default: &default
         filesets:
             - rtl
-        toplevel: ComputeBW
+        toplevel: fast_pixel_pos
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_ComputeBW
+        toplevel: tb_fast_pixel_pos
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/ComputeBW.do
+                    - -do waves/fast_pixel_pos.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -78,7 +90,7 @@ targets:
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: ComputeBW
+        toplevel: fast_pixel_pos
         tools:
             design_compiler:
                 script_dir: "src/u337mg015_ece337_synfiles_0"
