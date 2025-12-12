@@ -14,7 +14,10 @@ module flex_counter_dir #(
     output logic                 wrap_flag       
 );
 
-    typedef enum logic {DIR_UP, DIR_DOWN} dir_e;
+    typedef enum logic {DIR_UP = 0, 
+                        DIR_DOWN = 1
+    } dir_e;
+    
     dir_e dir_ff, dir_next;
 
     logic [SIZE-1:0] count_out_next;

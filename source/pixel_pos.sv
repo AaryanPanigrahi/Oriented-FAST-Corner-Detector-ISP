@@ -140,7 +140,7 @@ module pixel_pos #(
     always_comb begin : DIRECTION_INFO
         // If Normal
         if (MODE)
-            next_dir = {wrap_flag, 0};
+            next_dir = {wrap_flag, 1'b0};
 
         // If Snake
         else begin

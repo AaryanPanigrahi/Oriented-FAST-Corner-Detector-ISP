@@ -51,10 +51,8 @@ module sram_image #(
     always_comb begin
             rdat = sram_rdat;
             
-            if (ren_prev) begin
-                // Out of Bounds - Padding
-                if (addr_oob) rdat = '0;
-            end
+            // Out of Bounds - Padding
+            if (ren_prev && addr_oob) rdat = '0;
     end
 
     sram_model #(.ADDR_WIDTH(ADDR_WIDTH), .DATA_WIDTH(PIXEL_DEPTH), .RAM_IS_SYNCHRONOUS(1), .DUAL(1)) IMAGE_DUT (

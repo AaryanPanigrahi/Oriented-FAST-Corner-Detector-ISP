@@ -47,7 +47,7 @@ generate
                 if (addr == {ADDR_WIDTH{1'b1}})   // check if address is all ones (max value)
                     rdat <= '0;                  // return 0
                 // RAW handler - write addr and read addr same
-                else if (DUAL && (addr_write == addr))
+                else if (DUAL && (addr_write == addr) && wen)
                     rdat <= wdat;
                 else
                     rdat <= ram[addr];
