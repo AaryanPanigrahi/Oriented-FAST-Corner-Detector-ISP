@@ -4,10 +4,12 @@ module tb_sram_model;
 
     localparam ADDR_WIDTH = 8;
     localparam DATA_WIDTH = 32;
+    localparam DUAL = 0;
 
     // Signals
     logic                   clk;
     logic [ADDR_WIDTH-1:0]  addr;
+    logic [ADDR_WIDTH-1:0]  addr_write;
     logic [DATA_WIDTH-1:0]  wdat;
     logic                   wen, ren;
     logic [DATA_WIDTH-1:0]  rdat;
@@ -16,14 +18,16 @@ module tb_sram_model;
     sram_model #(
         .ADDR_WIDTH(ADDR_WIDTH),
         .DATA_WIDTH(DATA_WIDTH),
-        .RAM_IS_SYNCHRONOUS(1)
+        .RAM_IS_SYNCHRONOUS(1),
+        .DUAL(DUAL)
     ) DUT (
-        .ramclk (clk),
-        .addr   (addr),
-        .wdat   (wdat),
-        .wen    (wen),
-        .ren    (ren),
-        .rdat   (rdat)
+        .ramclk         (clk),
+        .addr           (addr),
+        .addr_write     (addr_write),
+        .wdat           (wdat),
+        .wen            (wen),
+        .ren            (ren),
+        .rdat           (rdat)
     );
 
     // Clk Gen - 100 Mhz
@@ -37,6 +41,7 @@ module tb_sram_model;
                             input logic [DATA_WIDTH-1:0] d);
         @(posedge clk);
         addr <= a;
+
         wdat <= d;
         wen  <= 1;
         ren  <= 0;
@@ -44,14 +49,40 @@ module tb_sram_model;
         wen  <= 0;
     endtask
 
-    task automatic do_read(input  logic [ADDR_WIDTH-1:0] a,
-                           output logic [DATA_WIDTH-1:0] q);
+    task automatic do_write_dual(input logic [ADDR_WIDTH-1:0] a,
+                            input logic [DATA_WIDTH-1:0] d);
+        @(posedge clk);
+        addr_write <= a; 
+
+        wdat <= d;
+        wen  <= 1;
+        ren  <= 0;
+        @(posedge clk);
+        wen  <= 0;
+    endtask
+
+    task automatic do_read(input  logic [ADDR_WIDTH-1:0] a);
         @(posedge clk);
         addr <= a;
         wen  <= 0;
         ren  <= 1;
         @(posedge clk);       
-        q = rdat;
+        ren <= 0;
+    endtask
+
+    task automatic do_read_write(input  logic [ADDR_WIDTH-1:0] a,
+                                input  logic [ADDR_WIDTH-1:0] a_w,
+                                input logic [DATA_WIDTH-1:0] d);
+        @(posedge clk);
+        addr <= a;
+        addr_write <= a_w;
+
+        wen  <= 1;
+        ren  <= 1;
+
+        wdat <= d;
+        @(posedge clk);
+        wen  <= 0;
         ren <= 0;
     endtask
 
@@ -74,18 +105,13 @@ module tb_sram_model;
         end
     endtask
 
-    // Custom Vars
-    logic [DATA_WIDTH-1:0] q;               // Read Var
-
     task init;
     begin
-        addr = '0; 
+        addr = 0;
+        addr_write = 0;
         wdat = '0; 
         wen = 0; 
-        ren = 0;
-
-        // Custom
-        q = '0;         
+        ren = 0;      
     end
     endtask
 
@@ -99,7 +125,7 @@ module tb_sram_model;
 
         // Read Loaded Data
         for (int i = 0; i < 16; i++) begin
-            do_read(i, q);
+            do_read(i);
         end
         ////    ////    ////    ////    ////    ////
 
@@ -111,14 +137,26 @@ module tb_sram_model;
 
         // Read Check
         for (int i = 0; i < 16; i++) begin
-            do_read(i, q);
+            do_read(i);
+        end
+        ////    ////    ////    ////    ////    ////
+
+        ////    ////    ////    ////    ////    ////
+        // Do Read and Write checks at the same time
+        for (int i = 0; i < 4; i++) begin
+            do_read_write(i + 1, i, i * i + 1);
+        end
+
+        // RAW CHECK
+        for (int i = 5; i < 12; i++) begin
+            do_read_write(i + 1, i, i * i);
         end
         ////    ////    ////    ////    ////    ////
 
         ////    ////    ////    ////    ////    ////
         // RAW Checker
         do_write(8'h10, 32'hDEADBEEF);
-        do_read (8'h10, q);  
+        do_read (8'h10);  
         ////    ////    ////    ////    ////    ////
 
         // End

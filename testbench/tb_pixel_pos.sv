@@ -3,7 +3,7 @@
 module tb_pixel_pos;
     parameter X_MAX = 300;
     parameter Y_MAX = 300;
-    parameter MODE = 1;
+    parameter MODE = 0;
 
     logic clk, n_rst;
     logic update_pos, new_trans;

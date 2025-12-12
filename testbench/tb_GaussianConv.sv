@@ -12,8 +12,8 @@ module tb_GaussianConv ();
 
     // SRAM Variables
     localparam MAX_KERNEL = 8'd5;
-    localparam X_MAX = 16;
-    localparam Y_MAX = 16;
+    localparam X_MAX = 400;
+    localparam Y_MAX = 400;
     localparam PIXEL_DEPTH = 8;
 
     // What do with err
@@ -22,7 +22,7 @@ module tb_GaussianConv ();
     logic clk, n_rst;
     logic [2:0] sigma;
     logic new_trans;
-    logic conv_done;
+    logic conv_done, pixel_done;
     logic [$clog2(X_MAX) - 1:0] max_x;
     logic [$clog2(Y_MAX) - 1:0] max_y;
     logic [7:0] kernel_size;
@@ -54,8 +54,14 @@ module tb_GaussianConv ();
         .y_addr_img(y_addr_img), 
         .ren_img(ren_img), 
         .rdat_img(rdat_img),
+        // SRAM Output
+        .x_addr_conv(x_addr_conv), 
+        .y_addr_conv(y_addr_conv),
+        .wen_conv(wen_conv),
+        .wdat_conv(wdat_conv),
         // Convolution Signals
         .conv_done(conv_done),
+        .pixel_done(pixel_done),
         // Kernel 
         .kernel_size(kernel_size),
         .sigma(sigma));
@@ -64,38 +70,64 @@ module tb_GaussianConv ();
     sram_image #(
         .PIXEL_DEPTH(PIXEL_DEPTH),
         .X_MAX(X_MAX),
-        .Y_MAX(Y_MAX)
+        .Y_MAX(Y_MAX),
+        .DUAL(0)
     ) IMAGE_RAM (
         .ramclk (clk),
         .x_addr   (x_addr_img),
         .y_addr   (y_addr_img),
+        .x_addr_write   ('0),
+        .y_addr_write   ('0),
         .wdat   (wdat_img),
         .wen    (wen_img),
         .ren    (ren_img),
         .rdat   (rdat_img)
     );
 
-    // SRAM Module
+    // SRAM Module - DUAL Port
     sram_image #(
         .PIXEL_DEPTH(PIXEL_DEPTH),
         .X_MAX(X_MAX),
-        .Y_MAX(Y_MAX)
+        .Y_MAX(Y_MAX),
+        .DUAL(0)
     ) CONV_SRAM (
         .ramclk (clk),
         .x_addr   (x_addr_conv),
         .y_addr   (y_addr_conv),
+        .x_addr_write   ('0),
+        .y_addr_write   ('0),
         .wdat   (wdat_conv),
         .wen    (wen_conv),
         .ren    (ren_conv),
         .rdat   (rdat_conv)
     );
 
+        // Aux
+    task wait_time(input int wait_t);
+        begin
+            repeat(wait_t) @(negedge clk);
+        end
+    endtask
+
+    task wait_ten;
+        begin
+            repeat(10) @(negedge clk);
+        end
+    endtask
+
+    task wait_fifty;
+        begin
+            repeat(50) @(negedge clk);
+        end
+    endtask
+
+    // Reset Gen
     task reset_dut;
     begin
-        n_rst = 0;
-        @(negedge clk);
-        n_rst = 1;
         @(posedge clk);
+        n_rst = 0;
+        @(posedge clk);
+        n_rst = 1;
     end
     endtask
 
@@ -114,10 +146,6 @@ module tb_GaussianConv ();
 
         n_rst = 1'b1;
         reset_dut();
-
-        // Preload Buffer
-        IMAGE_RAM.load_img("image/test_16x16.hex", 16, 16);
-        @(negedge clk);
     end
     endtask
 
@@ -134,9 +162,12 @@ module tb_GaussianConv ();
         repeat (5) @(negedge clk);
 
         sigma = 3'd2;
-        kernel_size = 3;
-        max_x = 5;
-        max_y = 5;
+        kernel_size = 5;
+        max_x = 400;
+        max_y = 242;
+        @(negedge clk);
+        IMAGE_RAM.load_img("image/doggo_image.hex", max_x, max_y);
+        @(negedge clk);
         begin_trans();
 
         // repeat (1000) @(negedge clk);
@@ -144,7 +175,10 @@ module tb_GaussianConv ();
             @(negedge clk);
         end
 
-        reset_dut;
+        wait_ten;
+
+        CONV_SRAM.dump_img("gaussian_image.hex", max_x, max_y);
+        wait_ten;
 
         $finish;
     end
