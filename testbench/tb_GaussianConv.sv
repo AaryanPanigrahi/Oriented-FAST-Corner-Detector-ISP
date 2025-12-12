@@ -162,11 +162,11 @@ module tb_GaussianConv ();
         repeat (5) @(negedge clk);
 
         sigma = 3'd2;
-        kernel_size = 5;
-        max_x = 400;
-        max_y = 242;
+        kernel_size = 3;
+        max_x = 16;
+        max_y = 16;
         @(negedge clk);
-        IMAGE_RAM.load_img("image/doggo_image.hex", max_x, max_y);
+        IMAGE_RAM.load_img("image/test_16x16.hex", max_x, max_y);
         @(negedge clk);
         begin_trans();
 

@@ -113,4 +113,3 @@ module tb_ComputeBW ();
 endmodule
 
 /* verilator coverage_on */
-
