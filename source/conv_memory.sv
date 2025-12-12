@@ -44,6 +44,16 @@ module conv_memory #(
     localparam DOWN2    = 2'b11;
     ////    ////    ////    ////    ////    ////
 
+    // Taking only one tick
+    logic new_sample_req_prev, new_sample_req_single_tick;
+    assign new_sample_req_single_tick = new_sample_req && !new_sample_req_prev;
+    
+    always_ff @(posedge clk, negedge n_rst) begin
+        if (!n_rst) new_sample_req_prev <= 0;
+        else new_sample_req_prev <= new_sample_req;
+    end
+
+
     ////    ////    ////    ////    ////    ////    
     // Output Reg Mapping
     int idx_x;
@@ -67,7 +77,7 @@ module conv_memory #(
                 end
             end
 
-            else if (new_sample_req) begin
+            else if (new_sample_req_single_tick) begin
                 for (idx_x = 0; idx_x < MAX_KERNEL; idx_x++) begin
                     for (idx_y = 0; idx_y < MAX_KERNEL; idx_y++) begin
                         // Registers have 1 extra on left and right
@@ -175,13 +185,6 @@ module conv_memory #(
     ////    ////    ////    ////    ////    ////
     // Latch on to final count - clear when new req
     logic new_sample_ready_next;
-    logic new_sample_req_prev, new_sample_req_info;
-    assign new_sample_req_info = new_sample_req_prev || new_sample_req;
-
-    always_ff @(posedge clk, negedge n_rst) begin
-        if (!n_rst) new_sample_req_prev <= 0;
-        else        new_sample_req_prev <= new_sample_req;
-    end
 
     always_ff @(posedge clk, negedge n_rst) begin : SAMPLE_READY_FF
         if (!n_rst) new_sample_ready   <= 0;
@@ -191,7 +194,7 @@ module conv_memory #(
 
     always_comb begin : NEW_SAMPLE_TRACKER
         new_sample_ready_next  = wrap_flag && !first_trans_flag;
-        if (!n_rst || new_sample_req_info) new_sample_ready_next = 0;
+        if (!n_rst || new_sample_req_single_tick) new_sample_ready_next = 0;
     end
     ////    ////    ////    ////    ////    ////
 
@@ -202,7 +205,7 @@ module conv_memory #(
         count_clear = !n_rst || (first_trans_flag && !first_trans_flag_prev);
 
         // When Sample Ready - ask for a new sample
-        if (new_sample_req) begin
+        if (new_sample_req_single_tick) begin
             count_enable = 1;
             count_clear = 1;
         end
@@ -257,7 +260,7 @@ module conv_memory #(
 
         else begin
             sample_updater_int      <= !new_sample_ready_next;
-            sample_updater          <= (sample_updater_int && !new_sample_ready && !first_trans_flag_prev);
+            sample_updater          <= (sample_updater_int && !new_sample_req_single_tick && !first_trans_flag_prev);
         end
     end
     ////    ////    ////    ////    ////    ////
@@ -300,7 +303,7 @@ module conv_memory #(
         end
 
         // Shifting Out Values - synced by new_sample_req
-        else if (new_sample_req) begin : SHIFTING_LOGIC
+        else if (new_sample_req_single_tick) begin : SHIFTING_LOGIC
             for (idx_x3 = 0; idx_x3 < MAX_KERNEL; idx_x3++) begin
                 for (idx_y3 = 0; idx_y3 < MAX_KERNEL; idx_y3++) begin
                     // Moving Right

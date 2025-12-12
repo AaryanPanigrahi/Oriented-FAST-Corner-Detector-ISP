@@ -21,7 +21,7 @@ typedef enum bit [1:0] {
 
 ACCU state, nextState;
 
-logic [15:0] nextSum, bufferSum, temp_kv, temp_pv;
+logic [15:0] nextSum, bufferSum, temp_kv, temp_pv, product, nextProduct;
 assign temp_kv = {8'b0, kernel_v};
 assign temp_pv = {8'b0, pixel_v};
 assign sum = bufferSum[15:8]; // Takes the 8 LSBs of the sum
@@ -31,10 +31,12 @@ assign sum = bufferSum[15:8]; // Takes the 8 LSBs of the sum
 always_ff @(posedge clk, negedge n_rst) begin
     if (~n_rst) begin 
         bufferSum <= '0;
+        product <= '0;
         state <= IDLE;
     end
     else begin 
         bufferSum <= nextSum;
+        product <= nextProduct;
         state <= nextState;
     end
 end

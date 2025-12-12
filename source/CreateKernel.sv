@@ -24,13 +24,6 @@ logic nextDone;       // Signals when to stop counting
 logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] nnKernel;   // Hold the non-normalized values 
 logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][7:0] nextKernel; // Used to clock the build kernel
 logic contConv, contConv_latch;   // Prevents the counter from moving forward until the matrix is ready
-logic [$clog2(MAX_KERNEL)-1:0] row_rollover_val, col_rollover_val;
-
-always_comb begin
-    row_rollover_val = kernel_size - 1'b1;
-    col_rollover_val = kernel_size - 1'b1;
-end
-
 
 always_ff @(posedge clk, negedge n_rst) begin
     if(!n_rst) contConv_latch <= 0;
@@ -49,7 +42,7 @@ FlexCounter #(.SIZE($clog2(MAX_KERNEL))) rows_build (
     .clk(clk),
     .n_rst(n_rst),
     .count_enable((contConv || done)),
-    .rollover_val(row_rollover_val),
+    .rollover_val(kernel_size-1),
     .clear(1'b0),
     .rollover_flag(end_row),
     .count_out(cur_x));
@@ -58,7 +51,7 @@ FlexCounter #(.SIZE($clog2(MAX_KERNEL))) columns_build (
     .clk(clk),
     .n_rst(n_rst),
     .count_enable(end_row && (contConv || done)),
-    .rollover_val(col_rollover_val),
+    .rollover_val(kernel_size-1),
     .clear(1'b0),
     .rollover_flag(end_column),
     .count_out(cur_y));

@@ -11,6 +11,7 @@ module GaussianConv #(
     // Starting
     input logic new_trans,
     output logic conv_done, 
+    output logic pixel_done,
 
     // PIXEL POS
     input logic [$clog2(X_MAX) - 1:0] max_x,
@@ -33,7 +34,7 @@ module GaussianConv #(
     output logic [PIXEL_DEPTH-1:0] wdat_conv
 );
 ////    ////    ////    ////    ////    ////    ////    ////    
-// localparam int MEM_ADDR_W = $clog2(Y_MAX * X_MAX);
+localparam int MEM_ADDR_W = $clog2(Y_MAX * X_MAX);
 
 // Memory and Kernel
 logic [MAX_KERNEL-1:0][MAX_KERNEL-1:0][PIXEL_DEPTH-1:0] kernel, input_matrix;
@@ -146,9 +147,8 @@ end
 ////    ////    ////    ////    ////    ////    ////    //// 
 logic compLatch, compLatch_prev, compAck, comp_clear_flag;
 
-logic new_sample_req_in_the_next_cycle;
-logic clear_signal;
-// assign new_sample_req_in_the_next_cycle = (((compLatch) || init_trans_sample_latch) && !new_trans);
+logic new_sample_req_in_the_next_cycle, clear_signal;
+assign new_sample_req_in_the_next_cycle = (((compLatch) || init_trans_sample_latch) && !new_trans);
 
 always_ff @(posedge clk, negedge n_rst) begin
     if(~n_rst) begin 
@@ -183,17 +183,17 @@ always_ff @(posedge clk, negedge n_rst) begin
     if (!n_rst) begin
         x_addr_conv <= 0;
         y_addr_conv <= 0;
-        wen_conv    <= 0;
         wdat_conv   <= 0;
     end
 
     else begin
         x_addr_conv <= curr_x;
         y_addr_conv <= curr_y;
-        wen_conv    <= blur_complete;
         wdat_conv   <= blurred_pixel;
     end
 end
+
+assign wen_conv = blur_complete;
 ////    ////    ////    ////    ////    ////    ////    //// 
 
 ////    ////    ////    ////    ////    ////    ////    ////    
@@ -222,8 +222,6 @@ pixel_pos #(.X_MAX(X_MAX), .Y_MAX(Y_MAX), .MODE(0)) image_pos (
     .curr_y(curr_y),
     .end_pos(end_pos),
     .next_dir(next_dir));
-
-// Output
 
 ////    ////    ////    ////    ////    ////    ////    ////    
 
@@ -268,5 +266,10 @@ ComputeKernel #(.MAX_KERNEL(MAX_KERNEL)) pixel_blur (
     .clear_signal(clear_signal),
     .clear_flag(comp_clear_flag),
     .blurred_pixel(blurred_pixel));
+
+always_ff @(posedge clk, negedge n_rst) begin
+    if (!n_rst) pixel_done <= 0;
+    else pixel_done <= blur_complete;
+end
 ////    ////    ////    ////    ////    ////    ////    ////
 endmodule

@@ -136,5 +136,4 @@ MatrixIndex #(.MAX_KERNEL(MAX_KERNEL)) get_index (
     // Out
     .kernel_v(kernel_v),
     .pixel_v(pixel_v));
-
 endmodule
