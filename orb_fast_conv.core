@@ -1,28 +1,37 @@
 CAPI=2:
-name: "u337mg015:ece337:sram_model:1.0.0"
+name: "u337mg015:ece337:orb_fast_conv:1.0.0"
 description: ""
 
 filesets:
     rtl:
-        files: []
-        file_type: systemVerilogSource
-
-    # To only be synth in TB
-    tb:
         files:
-            - "source/sram_model.sv"                  
-            - "testbench/tb_sram_model.sv"           
-
-            - "waves/sram_model.do":  { file_type: user }
-            - "waves/sram_model.gtkw": { file_type: user }
-            
-            - "image/init_mem.hex":    { file_type: user } 
+            - "source/orb_fast_conv.sv"
         file_type: systemVerilogSource
+        depend:
+            - "u337mg015:ece337:GaussianConv"
+            - "u337mg015:ece337:param_controller"
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg015:ece337:sram_model_syn"
+            - "u337mg015:ece337:orb_fast_conv_syn"
+
+    tb:
+        files:
+            - "image/test_16x16.hex": { file_type: user }
+            - "image/test_200x200.hex": { file_type: user }
+            - "image/smiley.hex": { file_type: user }
+            - "image/doggo_image.hex": { file_type: user }
+
+            - "image/params_init.hex":    { file_type: user }  
+
+            - "source/sram_image.sv"
+            - "source/sram_model.sv"
+
+            - "testbench/tb_orb_fast_conv.sv"
+            - "waves/orb_fast_conv.do": { file_type: user }
+            - "waves/orb_fast_conv.gtkw": { file_type: user }
+        file_type: systemVerilogSource
 
     synfiles:
         depend:
@@ -32,21 +41,21 @@ targets:
     default: &default
         filesets:
             - rtl
-        toplevel: sram_model
+        toplevel: orb_fast_conv
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_sram_model
+        toplevel: tb_orb_fast_conv
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/sram_model.do
+                    - -do waves/orb_fast_conv.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -73,15 +82,18 @@ targets:
                 verilator_options:
                     - --timing
                     - -Wall
-                    - -Wno-PINCONNECTEMPT
-                    - -Wno-GENUNNAMED
+                    - -Wno-PINCONNECTEMPTY
+                    - -Wno-WIDTHEXPAND
+                    - -Wno-WIDTHTRUNC
+                    - -Wno-UNUSEDSIGNAL
+                    - -Wno-UNDRIVEN
 
     syn:
         <<: *default
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: sram_model
+        toplevel: orb_fast_conv
         tools:
             design_compiler:
                 script_dir: "src/u337mg015_ece337_synfiles_0"
@@ -95,3 +107,4 @@ targets:
         filesets:
             - synth
             - tb
+

@@ -1,52 +1,63 @@
 CAPI=2:
-name: "u337mg015:ece337:sram_model:1.0.0"
+name: "u337mg115:ece337:fast_pixel_pos:1.0.0"
 description: ""
 
 filesets:
     rtl:
-        files: []
-        file_type: systemVerilogSource
-
-    # To only be synth in TB
-    tb:
         files:
-            - "source/sram_model.sv"                  
-            - "testbench/tb_sram_model.sv"           
-
-            - "waves/sram_model.do":  { file_type: user }
-            - "waves/sram_model.gtkw": { file_type: user }
-            
-            - "image/init_mem.hex":    { file_type: user } 
+            - "source/fast_pixel_pos.sv"
         file_type: systemVerilogSource
+        depend:
+            - "u337mg015:ece337:flex_counter_dir:1.0.0"
+            - "u337mg115:ece337:pixel_pos:1.0.0"
+            - "u337mg115:ece337:pipelined_buffer_loader:1.0.0"
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg015:ece337:sram_model_syn"
+            - "u337mg115:ece337:fast_pixel_pos_syn"
+
+    tb:
+        files:
+            - "testbench/tb_fast_pixel_pos.sv"
+
+            - "source/sram_image.sv"                  
+            - "testbench/tb_sram_image.sv"          
+
+            - "source/sram_model.sv" 
+            - "testbench/tb_sram_model.sv"   
+
+            - "waves/fast_pixel_pos.do": { file_type: user }
+            - "waves/fast_pixel_pos.gtkw": { file_type: user }
+
+            - "image/testing.hex": { file_type: user }
+
+            # - "data/file.txt": { file_type: user }
+        file_type: systemVerilogSource
 
     synfiles:
         depend:
-            - "u337mg015:ece337:synfiles"
+            - "u337mg115:ece337:synfiles"
 
 targets:
     default: &default
         filesets:
             - rtl
-        toplevel: sram_model
+        toplevel: fast_pixel_pos
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_sram_model
+        toplevel: tb_fast_pixel_pos
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/sram_model.do
+                    - -do waves/fast_pixel_pos.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -73,18 +84,16 @@ targets:
                 verilator_options:
                     - --timing
                     - -Wall
-                    - -Wno-PINCONNECTEMPT
-                    - -Wno-GENUNNAMED
 
     syn:
         <<: *default
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: sram_model
+        toplevel: fast_pixel_pos
         tools:
             design_compiler:
-                script_dir: "src/u337mg015_ece337_synfiles_0"
+                script_dir: "src/u337mg115_ece337_synfiles_0"
                 dc_script: "synth.tcl"
                 report_dir: "reports"
                 target_library: "/home/ecegrid/a/ece337/summer24-refactor/tech/ami05/osu05_stdcells.db"
@@ -95,3 +104,4 @@ targets:
         filesets:
             - synth
             - tb
+

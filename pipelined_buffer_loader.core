@@ -1,28 +1,27 @@
 CAPI=2:
-name: "u337mg015:ece337:sram_model:1.0.0"
+name: "u337mg015:ece337:pipelined_buffer_loader:1.0.0"
 description: ""
 
 filesets:
     rtl:
-        files: []
-        file_type: systemVerilogSource
-
-    # To only be synth in TB
-    tb:
         files:
-            - "source/sram_model.sv"                  
-            - "testbench/tb_sram_model.sv"           
-
-            - "waves/sram_model.do":  { file_type: user }
-            - "waves/sram_model.gtkw": { file_type: user }
-            
-            - "image/init_mem.hex":    { file_type: user } 
+            - "source/pipelined_buffer_loader.sv"
         file_type: systemVerilogSource
+        # depend:
+        #     - "fusesoc:core:name"
 
     synth:
         depend:
             - "ece337:tech:AMI_05_LIB"
-            - "u337mg015:ece337:sram_model_syn"
+            - "u337mg015:ece337:pipelined_buffer_loader_syn"
+
+    tb:
+        files:
+            - "testbench/tb_pipelined_buffer_loader.sv"
+            - "waves/pipelined_buffer_loader.do": { file_type: user }
+            - "waves/pipelined_buffer_loader.gtkw": { file_type: user }
+            # - "data/file.txt": { file_type: user }
+        file_type: systemVerilogSource
 
     synfiles:
         depend:
@@ -32,21 +31,21 @@ targets:
     default: &default
         filesets:
             - rtl
-        toplevel: sram_model
+        toplevel: pipelined_buffer_loader
 
     sim: &sim
         <<: *default
         default_tool: verilator
         filesets_append:
             - tb
-        toplevel: tb_sram_model
+        toplevel: tb_pipelined_buffer_loader
         tools:
             modelsim:
                 vsim_options:
                     - -vopt
                     - -voptargs='+acc'
                     - -t ps
-                    - -do waves/sram_model.do
+                    - -do waves/pipelined_buffer_loader.do
                     - -onfinish stop
                     - -do "set PrefSource(OpenOnFinish) 0 ; set PrefMain(LinePrefix) \"\" ; set PrefMain(colorizeTranscript) 1"
                     - -coverage
@@ -73,15 +72,13 @@ targets:
                 verilator_options:
                     - --timing
                     - -Wall
-                    - -Wno-PINCONNECTEMPT
-                    - -Wno-GENUNNAMED
 
     syn:
         <<: *default
         filesets_append:
             - synfiles
         default_tool: design_compiler
-        toplevel: sram_model
+        toplevel: pipelined_buffer_loader
         tools:
             design_compiler:
                 script_dir: "src/u337mg015_ece337_synfiles_0"
@@ -95,3 +92,4 @@ targets:
         filesets:
             - synth
             - tb
+
