@@ -66,6 +66,12 @@ module tb_orb_fast_conv ();
     logic ren_conv_fast;
     logic [PIXEL_DEPTH-1:0] rdat_conv_fast;
 
+    // Circle Out
+    logic [$clog2(X_MAX):0] x_addr_circle;
+    logic [$clog2(Y_MAX):0] y_addr_circle;
+    logic wen_circle;
+    logic [PIXEL_DEPTH-1:0] wdat_circle;
+
     // ------------------------------------------------------------------
     // FAST Output
     // ------------------------------------------------------------------
@@ -73,6 +79,10 @@ module tb_orb_fast_conv ();
     logic y_addr_fast;
     logic wen_fast;
     logic wdat_fast;
+
+    // FAST input
+    logic ren_fast;
+    logic rdat_fast;
     ////    ////    ////    ////    ////    ////    ////
 
     ////    ////    ////    ////    ////    ////    ////
@@ -134,7 +144,41 @@ module tb_orb_fast_conv ();
         .rdat   (rdat_conv_fast)
     );  
 
-      
+    // Fast SRAM - DUAL Port
+    sram_image #(
+        .PIXEL_DEPTH(1),
+        .X_MAX(X_MAX),
+        .Y_MAX(Y_MAX),
+        .DUAL(0)
+    ) FAST_SRAM (
+        .ramclk (clk),
+        .x_addr   (x_addr_fast),
+        .y_addr   (y_addr_fast),
+        // Fast Write
+        .wdat   (wdat_fast),
+        .wen    (wen_fast),
+        // Fast Read
+        .ren    (ren_fast),
+        .rdat   (rdat_fast)
+    );  
+
+    // Circle SRAM
+    sram_image #(
+        .PIXEL_DEPTH(PIXEL_DEPTH),
+        .X_MAX(X_MAX),
+        .Y_MAX(Y_MAX),
+        .DUAL(0)
+    ) CIRCLE_OUT (
+        .ramclk (clk),
+        // Circles Write
+        .x_addr   (x_addr_circle),
+        .y_addr   (x_addr_circle),
+        .wen    (wen_circle),
+        .wdat   (wdat_circle),
+        .ren    ('0),
+        .rdat   ()
+    );
+
     ////    ////    ////    ////    ////    ////    ////  
 
     ////    ////    ////    ////    ////    ////    ////  
@@ -145,40 +189,53 @@ module tb_orb_fast_conv ();
         .X_MAX      (X_MAX),
         .Y_MAX      (Y_MAX),
         .PIXEL_DEPTH(PIXEL_DEPTH)
-    ) dut (
+    ) OVERALL (
         .clk                (clk),
         .n_rst              (n_rst),
 
         .new_trans          (new_trans),
         .img_done           (img_done), 
-
+        // IMAGE Input
         .x_addr_img         (x_addr_img),
         .y_addr_img         (y_addr_img),
         .ren_img            (ren_img),
         .rdat_img           (rdat_img),
 
+        // IMAGE Params
+        // Read Port
         .addr_params        (addr_params),
         .ren_params         (ren_params),
         .rdat_params        (rdat_params),
-
+         // Write Port
         .addr_write_params  (addr_write_params),
         .wen_params         (wen_params),
         .wdat_params        (wdat_params),
 
+        // Conv Output
         .x_addr_conv        (x_addr_conv),
         .y_addr_conv        (y_addr_conv),
         .wen_conv           (wen_conv),
         .wdat_conv          (wdat_conv),
-
+          // Fast Reads from conv
         .x_addr_conv_fast   (x_addr_conv_fast),
         .y_addr_conv_fast   (y_addr_conv_fast),
         .ren_conv_fast      (ren_conv_fast),
         .rdat_conv_fast     (rdat_conv_fast),
 
+         // FAST Output
         .x_addr_fast        (x_addr_fast),
         .y_addr_fast        (y_addr_fast),
         .wen_fast           (wen_fast),
-        .wdat_fast          (wdat_fast)
+        .wdat_fast          (wdat_fast),
+        // FAST input
+        .ren_fast(renfast),
+        .rdat_fast(rdatfast),
+
+        // Circle Out
+        .x_addr_circle(xaddr_circle),
+        .y_addr_circle(yaddr_circle),
+        .wen_circle(wen_circle),
+        .wdat_circle(wdat_circle)
     );
     ////    ////    ////    ////    ////    ////    ////  
 
@@ -203,6 +260,7 @@ module tb_orb_fast_conv ();
 
         repeat (5) @(negedge clk);
         IMAGE_BW_RAM.load_img("image/doggo_image.hex", img_x, img_y);
+        CIRCLE_OUT.load_img("image/doggo_image.hex", img_x, img_y);
         
         repeat (5) @(negedge clk);
         // Preload params
@@ -213,6 +271,7 @@ module tb_orb_fast_conv ();
         repeat (10) @(negedge clk);
         CONV_SRAM.dump_img("gaussian_image.hex", img_x, img_y);
         repeat (10) @(negedge clk);
+        CIRCLE_OUT.dump_img("gaussian_image.hex", img_x, img_y);
 
         $finish;
     end
