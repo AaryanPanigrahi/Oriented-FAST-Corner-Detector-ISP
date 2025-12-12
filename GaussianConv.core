@@ -24,9 +24,13 @@ filesets:
         files:
             - "image/test_16x16.hex": { file_type: user }
             - "image/test_200x200.hex": { file_type: user }
+            - "image/smiley.hex": { file_type: user }
+            - "image/doggo_image.hex": { file_type: user }
+
             - "source/sram_image.sv"
             - "source/sram_model.sv"
             - "testbench/tb_GaussianConv.sv"
+
             - "waves/GaussianConv.do": { file_type: user }
             - "waves/GaussianConv.gtkw": { file_type: user }
             # - "data/file.txt": { file_type: user }

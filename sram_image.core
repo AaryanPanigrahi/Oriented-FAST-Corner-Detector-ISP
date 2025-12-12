@@ -18,6 +18,7 @@ filesets:
             - "waves/sram_image.do":  { file_type: user }
             - "waves/sram_image.gtkw": { file_type: user }
             
+            - "image/test_5x5.hex":    { file_type: user }  
             - "image/test_16x16.hex":    { file_type: user }  
             - "image/test_200x200.hex":    { file_type: user }  
         file_type: systemVerilogSource
