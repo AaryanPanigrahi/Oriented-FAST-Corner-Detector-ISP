@@ -317,21 +317,21 @@ always_comb begin : BUFFER_LOAD_LOGIC
             center_value = input_pixel;
         end
 
-        WAIT_PIXEL_1:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_2:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_3:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_4:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_5:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_6:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_7:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_8:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_9:  buff_output[pixel_index]  = input_pixel;
-        WAIT_PIXEL_10: buff_output[pixel_index] = input_pixel;
-        WAIT_PIXEL_11: buff_output[pixel_index] = input_pixel;
-        WAIT_PIXEL_12: buff_output[pixel_index] = input_pixel;
-        WAIT_PIXEL_13: buff_output[pixel_index] = input_pixel;
-        WAIT_PIXEL_14: buff_output[pixel_index] = input_pixel;
-        WAIT_PIXEL_15: buff_output[pixel_index] = input_pixel;
+        WAIT_PIXEL_1:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_2:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_3:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_4:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_5:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_6:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_7:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_8:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_9:  buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_10: buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_11: buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_12: buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_13: buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_14: buff_output[pixel_index]     = input_pixel;
+        WAIT_PIXEL_15: buff_output[pixel_index]     = input_pixel;
         WAIT_PIXEL_16: begin
             buff_output[pixel_index] = input_pixel;
             done  = 1;
