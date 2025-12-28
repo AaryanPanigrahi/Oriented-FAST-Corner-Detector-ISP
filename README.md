@@ -1,4 +1,4 @@
-# FAST Corner Detection Image Signal Processor (ISP)
+# FAST Corner Detection ISP
 
 A hardware image signal processor that denoises an image with a 2D Gaussian filter and then runs a FAST corner detector to produce a corner feature map suitable for real-time computer vision pipelines.
 
@@ -12,7 +12,7 @@ A hardware image signal processor that denoises an image with a 2D Gaussian filt
 
 ## Project Overview
 
-This project implements a corner-detecting **image signal processor** that takes an input frame over AHB, performs Gaussian de-noising and optional downscaling, runs the FAST corner detection algorithm, applies non-maximum suppression (NMS), and exposes both the processed image and feature maps back over AHB. The design targets ASIC-style RTL with explicit SRAM-backed image buffers, making it a realistic prototype for ISP blocks used in embedded vision and SLAM pipelines.
+This project implements a corner-detecting **image signal processor** that takes an input frame flashed onto SRAM, performs Gaussian de-noising and optional downscaling, runs the FAST corner detection algorithm, applies non-maximum suppression (NMS), and exposes both the processed image and feature maps back over AHB. The design targets explicit SRAM-backed image buffers, making it a realistic prototype for ISP blocks used in embedded vision and SLAM pipelines.
 
 The ISP is organized as a set of modular processing stages—Gaussian, FAST, NMS, and visualization—connected by well-defined SRAM interfaces, enabling independent verification, pipelining, and future feature growth.
 
@@ -20,25 +20,7 @@ The ISP is organized as a set of modular processing stages—Gaussian, FAST, NMS
 
 ## System Architecture & Data Flow
 
-At a high level, the ISP receives a frame through an AHB subordinate interface, stores it into on‑chip memory, processes it through Gaussian and FAST pipelines, optionally applies NMS and visualization, and then returns image and feature outputs via a defined memory map. Memory-mapped regions hold the input image, feature array, output image, and configuration registers that control resolution and output mode.
-
-Core flow (baseline path):
-- AHB → Input SRAM (raw image)  
-- Gaussian convolution + optional downscaling → Denoised / downscaled image SRAM  
-- FAST corner detection → Feature map SRAM  
-- NMS → Refined corner map SRAM  
-- Visualization → Output image SRAM with highlighted corners
-
-### Memory Map (Top-Level View)
-
-| Region                         | Address Range     | Role                                                                 |
-|--------------------------------|-------------------|----------------------------------------------------------------------|
-| Input Image                    | `0x00000–0x1C1FF` | Raw image up to 720×1280 pixels, bottom-left oriented.      |
-| Feature Array                  | `0x1C200–0x383FF` | 720×1280 bit map of corner presence (1 = corner).           |
-| Output Image                   | `0x38400–0x545FF` | Post-processed / visualized image frame.                  |
-| Configuration Register         | `0x54600–0x54603` | Width, height, output mode, and control bits.              |
-
-An internal controller steers read/write traffic between the processing stages and the appropriate SRAM banks, ensuring that Gaussian, FAST, and NMS see consistent pixel data and that intermediate results can be reused without redundant transfers.
+At a high level, the ISP receives a frame flashed onto SRAM, along with a seperate SRAM for image and processing parameters. The core pipepline involves first generating a kernel given parameters for kernel size (KxK) and variance values, then loading a (KxK) "working" image values from SRAM and storing them on local registers and performing gaussian convolution on the entire image. After de-noising is complete, a run of the FAST algoritim is run across the image per pixel and saved onto an output 1 bit SRAM 
 
 ***
 
