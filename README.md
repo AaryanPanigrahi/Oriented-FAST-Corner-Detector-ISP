@@ -14,7 +14,7 @@ A hardware image signal processor that denoises an image with a 2D Gaussian filt
 
 This project implements a corner-detecting **image signal processor** that takes an input frame flashed onto SRAM, performs Gaussian de-noising and optional downscaling, runs the FAST corner detection algorithm, applies non-maximum suppression (NMS), and exposes both the processed image and feature maps back over AHB. The design targets explicit SRAM-backed image buffers, making it a realistic prototype for ISP blocks used in embedded vision and SLAM pipelines.
 
-The ISP is organized as a set of modular processing stages—Gaussian, FAST, NMS, and visualization—connected by well-defined SRAM interfaces, enabling independent verification, pipelining, and future feature growth.
+The ISP is organized as a set of modular processing stages - Gaussian de-blurring, FAST, NMS, and corner visualization - connected by SRAM interfaces, enabling independent verification, pipelining, and future feature growth.
 
 ***
 
