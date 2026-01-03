@@ -49,7 +49,11 @@ The Matlab reference pipeline generates kernels, applies convolution on test ima
 
 ## Module Hierarchy & Design
 
-The FAST ISP is composed of 25+ modular RTL blocks organized into logical subsystems: parameter extraction, image preprocessing, Gaussian convolution, FAST detection, visualization, and supporting utilities.[file:25][file:26]
+<p align="center">
+  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/Top%20Level%20Hierarchy.png" width="700">
+</p>
+
+The FAST ISP is composed of 25+ modular RTL blocks organized into logical subsystems: parameter extraction, image preprocessing, Gaussian convolution, FAST detection, visualization, and supporting utilities
 
 ### Top-Level Integration Modules
 
@@ -58,6 +62,10 @@ The FAST ISP is composed of 25+ modular RTL blocks organized into logical subsys
 
 - **param_controller.sv**  
   Extracts image metadata (dimensions, kernel size, Gaussian variance) from a parameter SRAM region (similar to PNG/BMP headers). Stores these values in accessible registers and asserts `new_trans` to kick off processing when a new frame loads. Uses an FSM to crawl through modes until `PROCESS_MODE`, then signals `done=1` for the next frame.
+
+<p align="center">
+  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/param_memoryLayout.png" width="700">
+</p>
 
 - **GaussianConv.sv**  
   Top-level Gaussian convolution controller. Waits for `new_trans`, attaches to grayscale input SRAM, outputs blurred image to output SRAM. Combines `CreateKernel`, `pixel_pos`, `conv_memory`, and `ComputeKernel`. Outputs `pixel_done` per pixel (for FAST sync) and `conv_done` for full image completion.
@@ -88,6 +96,10 @@ The Gaussian subsystem implements 2D convolution with kernel generation, overlap
 
 - **conv_memory.sv**  
   Manages the rolling \(K\times K\) working buffer from SRAM. Uses `pixel_pos` for top-left tracking and `nextdir` to load only the new \(K\) pixels per shift (snake pattern: 0→x_max→y++→x_max→0). Asserts `new_sample_ready` when loaded; shifts on `new_sample_req` from `ComputeKernel`. Amortizes \(O(K^2)\) to \(O(K)\) memory accesses per output pixel.
+
+<p align="center">
+  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/conv_memory_IDEA.png" width="700">
+</p>
 
 ---
 
@@ -153,29 +165,79 @@ These foundational modules support addressing, memory, and counting across the p
 
 ---
 
-## Module Dependencies
+## Verification Plan
 
-<p align="center">
-  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/Top%20Level%20Hierarchy.png" width="700">
-</p>
+Verification follows a hierarchical approach: individual modules → subsystem integration → full-chip simulation against Matlab/Python golden references. Each testbench targets functionality, timing, resets, edge cases, and parameter changes.[file:27]
 
-This hierarchy ensures each module has a single responsibility with clear SRAM/stream interfaces, enabling hierarchical verification and synthesis
+### Primitive Modules
 
-***
+**flex_counter_dir.sv**  
+- Reset/clear behavior across all modes (up/down/up-down).  
+- `wrapval` changes mid-count (continues to new limit if flag active).  
+- Strobe vs. free-run `countenable`; verify `wrapflag`/`rolloverflag` per mode.
 
-## Verification & Reference Tooling
+**sram_model.sv / sram_image.sv**  
+- Read/write timing with constant `ren`/`wen` strobing.  
+- Concurrent read+write; out-of-bounds 2D padding (0 or 0xFF).  
+- `load_img`/`dump_img`/`rmh` for image file I/O; full memory initialization.
 
-The design is accompanied by a structured verification plan and software reference models.
+**memory_reg.sv**  
+- Load behavior on `load_enable`; reset clearing.
 
-Key components:
-- Matlab scripts for Gaussian kernel generation and convolution on sample images, used to derive expected blurred outputs.  
-- Python/Matlab tooling to run FAST, NMS, and visualization on reference images and to compare them with Questasim RTL dumps.  
-- Testbenches per module (e.g., `flexcounterdir`, `getpixel`, `srammodel`, Gaussian modules, FAST pixel iterator) that stress-reset behavior, edge cases, and mid-stream parameter changes.
+### Addressing & Traversal
 
-This layered verification approach makes each module verifiable in isolation and then in full-chain integration, reducing debugging effort as features are added.
+**pixel_pos.sv**  
+- Snake vs. raster modes; `endpos` at image end.  
+- `next_dir` encoding for conv_memory sync; row-end hold/increment logic.  
+- Mid-run `maxx`/`maxy` changes.
 
-***
+### Gaussian Pipeline
 
-<p align="center">
-  <!-- Space for verification waveforms / side-by-side RTL vs Matlab screenshots -->
-</p>
+**InitKernel.sv / CreateKernel.sv**  
+- Kernel generation/normalization for multiple `sigma`/`kernel_size`; sum=1.0 check.  
+- Fixed-point rounding; large kernel timing.
+
+**conv_memory.sv**  
+- `newtrans`→`new_sample_ready` handshake for full image.  
+- `nextdir`-driven shifts (only K new pixels); snake traversal validation.  
+- `kernelsize` changes mid-run; cross-compatibility with `pixel_pos`.
+
+**ComputeKernel.sv / KernelAccumulator.sv / MatrixIndex.sv**  
+- Pixel/kernel pairs from `MatrixIndex`; accumulator clear per position.  
+- Overflow truncate at 255; compare `blurredpixel` to Matlab golden.  
+- Strobe timing (`enstrobe`); reset mid-computation.
+
+**GaussianConv.sv (system)**  
+- Full image convolution from grayscale SRAM→blurred SRAM.  
+- `pixel_done` per pixel, `conv_done` at end; varying clock speeds.  
+- Border pixels, extreme values (0/255 all-white), reset during run.
+
+### FAST Pipeline
+
+**pipelined_buffer_loader.sv**  
+- 16-circle neighborhood load (≤3 cycles/pixel via SRAM pipelining).  
+- Early-exit skips unused loads; buffer reset on reject.
+
+**fast_controller.sv / fast_top_level.sv**  
+- Gaussian `pixel_done`→FAST start; no overtake/lag (line buffering).  
+- Corner detection (12 contiguous ±threshold); SRAM4 write only on true corners.  
+- `updatesample` post-decision; `currx`/`curry` stability.
+
+**draw_circle.sv**  
+- Circle rasterization only when feature map=1 (`true` gated).  
+- Overlay on original RGB SRAM; compare to Matlab visualization.
+
+### Top-Level & Integration
+
+**orb_fast_conv.sv / param_controller.sv**  
+- Parameter extraction (`new_trans` on new frame); `done=1` post-process.  
+- Full pipeline: RGB→grayscale→Gaussian→FAST→visualizer (multiple images).  
+- Varying resolutions, kernel sizes; clock scaling; mid-frame reset.
+
+**Cross-subsystem**  
+- Snake traversal consistency (Gaussian→FAST).  
+- Percent error vs. Matlab (fixed-point quantization).  
+- Matlab/Python golden for end-to-end (convolution, corners, overlays).
+
+Testbenches use pre-loaded images, waveform dumps for timing, and automated golden comparisons. Focus on real-time constraints (e.g., no pipeline stalls).[file:27]
+
