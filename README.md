@@ -47,6 +47,32 @@ The Matlab reference pipeline generates kernels, applies convolution on test ima
   ></video>
 </div>
 
+## FAST Corner Detection: Our Implementation
+
+**Our FAST detects corners by checking if ≥12 contiguous neighbors on a 16-pixel circle are all brighter *or* all darker than the center by a threshold.**
+
+### Algorithm Flow
+
+1. pixel_pos.sv walks image snake-style (sync'd w/ Gaussian)
+2. pipelined_buffer_loader.sv loads center pixel + 16-circle neighbors
+3. fast_controller.sv compares brightness vs threshold
+4. Early-exit if impossible to get 12 contiguous → skip rest
+5. If corner → write '1' to FAST SRAM4, assert updatesample
+6. Repeat → draw_circle.sv overlays circles on original RGB
+
+**Pipelined Neighborhood Loading**  
+- `pipelined_buffer_loader` exploits SRAM read-post timing: addresses next pixel *while* current loads into buffer (≤3 cycles/pixel).  
+- Only loads high-priority circle positions (1,5,9,13) first for early-exit.
+
+**Line-Buffered Pipeline**  
+- FAST waits for Gaussian `pixel_done` (never overtakes).  
+- Starts after Gaussian completes ~3 lines (neighborhood window safety).  
+- Snake traversal keeps both stages perfectly synced via shared `nextdir`.
+
+**Early-Exit Acceleration**  
+- Check 4 key circle positions first → reject 90%+ pixels without full 16-sample load.  
+- Mask-based contiguous counting as neighbors arrive (no full buffer wait)
+
 ## Module Hierarchy & Design
 
 <p align="center">
@@ -178,7 +204,7 @@ ___
 
 ## Verification Plan
 
-Verification follows a hierarchical approach: individual modules → subsystem integration → full-chip simulation against Matlab/Python golden references. Each testbench targets functionality, timing, resets, edge cases, and parameter changes.[file:27]
+Verification follows a hierarchical approach: individual modules → subsystem integration → full-chip simulation against Matlab/Python golden references. Each testbench targets functionality, timing, resets, edge cases, and parameter changes.
 
 ### Primitive Modules
 
@@ -250,5 +276,5 @@ Verification follows a hierarchical approach: individual modules → subsystem i
 - Percent error vs. Matlab (fixed-point quantization).  
 - Matlab/Python golden for end-to-end (convolution, corners, overlays).
 
-Testbenches use pre-loaded images, waveform dumps for timing, and automated golden comparisons. Focus on real-time constraints (e.g., no pipeline stalls).[file:27]
+Testbenches use pre-loaded images, waveform dumps for timing, and automated golden comparisons. Focus on real-time constraints (e.g., no pipeline stalls).
 
