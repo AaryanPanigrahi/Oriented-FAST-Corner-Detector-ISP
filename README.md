@@ -32,10 +32,6 @@ At a high level, the ISP receives a frame flashed onto SRAM, along with a sepera
 
 The Gaussian stage implements a 2D convolution-based low-pass filter to suppress high-frequency aliasing and noise before corner detection. This improves FAST feature quality by smoothing spurious contrast variations while preserving underlying structural edges
 
-<p align="center">
-  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/gaussian_example.png" width="700">
-</p>
-
 ### Conceptual Behavior
 
 - A 2D Gaussian kernel \(G(x,y)\) is synthesized for a given kernel size and standard deviation \(\sigma\), then normalized so that its coefficients sum to 1.
@@ -129,6 +125,10 @@ The FAST subsystem implements accelerated corner detection with early-exit and p
 
 - **ComputeBW.sv**  
   Computes grayscale from RGB pixels, feeding the luminance stream into Gaussian.
+
+<p align="center">
+  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/gaussian_example.png" width="700">
+</p>
 
 ### Visualization & Overlay
 
