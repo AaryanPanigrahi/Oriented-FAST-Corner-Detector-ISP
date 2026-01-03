@@ -22,10 +22,8 @@ The ISP is organized as a set of modular processing stages - Gaussian de-blurrin
 
 At a high level, the ISP receives a frame flashed onto SRAM, along with a seperate SRAM for image and processing parameters. The core pipepline involves first generating a kernel given parameters for kernel size (KxK) and variance values, then loading a (KxK) "working" image values from SRAM and storing them on local registers and performing gaussian convolution on the entire image. After de-noising is complete, a run of the FAST algoritim is run across the image per pixel and saved onto an output 1 bit SRAM 
 
-***
-
 <p align="center">
-  <!-- Dataflow diagram: AHB → SRAM → Gaussian → FAST → NMS → Visualizer -->
+  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/CorePipelineWorkflow.png" width="700">
 </p>
 
 ---
