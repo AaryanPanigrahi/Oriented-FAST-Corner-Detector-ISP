@@ -5,7 +5,7 @@ A hardware image signal processor that denoises an image with a 2D Gaussian filt
 ***
 
 <p align="center">
-  <!-- Main system block diagram / aesthetic render -->
+  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/DogPhotoCompare.png" width="700">
 </p>
 
 ***
