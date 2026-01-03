@@ -40,10 +40,10 @@ The Gaussian stage implements a 2D convolution-based low-pass filter to suppress
 
 The Matlab reference pipeline generates kernels, applies convolution on test images of varying resolutions, and produces ground truth outputs used for RTL verification.
 
-#### Convolution of a 3x3 kernel over a 4 bit image
+#### Convolution of a 3x3 kernel over a 4 bit 5x5 image
 <div align="center">
   <video
-    src="https://github.com/user-attachments/assets/a17b8fac-5327-4e39-9859-c9637499317e"
+    src="https://github.com/user-attachments/assets/39dcf512-b3b6-44cb-b3db-769a7bb6d82c"
   ></video>
 </div>
 
