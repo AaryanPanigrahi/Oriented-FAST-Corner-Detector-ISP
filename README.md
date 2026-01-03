@@ -12,7 +12,7 @@ A hardware image signal processor that denoises an image with a 2D Gaussian filt
 
 ## Project Overview
 
-This project implements a corner-detecting **image signal processor** that takes an input frame flashed onto SRAM, performs Gaussian de-noising and optional downscaling, runs the FAST corner detection algorithm, applies non-maximum suppression (NMS), and exposes both the processed image and feature maps back over AHB. The design targets explicit SRAM-backed image buffers, making it a realistic prototype for ISP blocks used in embedded vision and SLAM pipelines.
+This project implements a corner-detecting **image signal processor** that takes an input frame flashed onto SRAM, performs Gaussian de-noising and optional downscaling, runs the FAST corner detection algorithm, applies non-maximum suppression (NMS). The design targets explicit SRAM-backed image buffers, making it a realistic prototype for ISP blocks used in embedded vision and SLAM pipelines.
 
 The ISP is organized as a set of modular processing stages - Gaussian de-blurring, FAST, NMS, and corner visualization - connected by SRAM interfaces, enabling independent verification, pipelining, and future feature growth.
 
@@ -37,8 +37,8 @@ The Gaussian stage implements a 2D convolution-based low-pass filter to suppress
 ### Conceptual Behavior
 
 - A 2D Gaussian kernel \(G(x,y)\) is synthesized for a given kernel size and standard deviation \(\sigma\), then normalized so that its coefficients sum to 1.
-- The kernel is convolved over the image tensor, conceptually per-channel for RGB but applied on a grayscale stream in the baseline corner detector path.
-- Border handling uses padded zeros via the SRAM-to-2D abstraction so that out-of-bounds accesses yield 0, effectively implementing zero padding.
+- The kernel is convolved over the image applied on a grayscale stream in the baseline corner detector path
+- Border handling uses padded zeros via the SRAM-to-2D abstraction so that out-of-bounds accesses yield 0, effectively implementing zero padding
 
 The Matlab reference pipeline generates kernels, applies convolution on test images of varying resolutions, and produces ground truth outputs used for RTL verification.
 
@@ -47,23 +47,15 @@ The Matlab reference pipeline generates kernels, applies convolution on test ima
 The Gaussian pipeline is decomposed into several reusable RTL blocks, each with a narrow, testable contract:
 
 - **InitializeKernel.sv**  
-  - Inputs: `clk`, `nrst`, `start`, `sigma`, `SIZE`.
-  - Outputs: `kernel[SIZE×SIZE]`, `sum`, `done`.
   - Function: Computes and normalizes the fixed-point Gaussian kernel coefficients for the requested kernel size and variance; asserts `done` when the kernel is ready.
 
 - **PropagateMatrix.sv**  
-  - Inputs: `clk`, `nrst`, `inputbuffer`, `done`, `nextdir`.
-  - Outputs: `inputmatrix[SIZE×SIZE]`, `ready`.
   - Function: Maintains the sliding \(N\times N\) overlap window over the 2D image, shifting horizontally and vertically in a “snake-like” scanning pattern derived from `nextdir`. Borders are zero buffered.
 
 - **MatrixIndex.sv**  
-  - Inputs: `clk`, `nrst`, `curx`, `cury`, `kernel`, `in`, `enstrobe`.
-  - Outputs: `kernelv`, `pixelv`.
   - Function: Walks over the kernel and overlap patches cell-by-cell, providing temporally serialized coefficient/pixel pairs into the MAC datapath.
 
 - **ComputeKernel.sv**  
-  - Inputs: `clk`, `nrst`, `inputmatrix`, `kernel`, `start`.
-  - Outputs: `blurredpixel`, `done`.
   - Function: Implements the multiply-accumulate path for one convolution result, truncating saturation at 255 on overflow and clearing the accumulator between pixels.
 
 - **convmemory.sv + sramimage.sv**  
@@ -100,7 +92,7 @@ The FAST (Features from Accelerated Segment Test) stage identifies corner-like s
 
 - For each candidate pixel \(p\), a 16-point circle of surrounding pixels is sampled (e.g., using a Bresenham-like circle rasterization).
 - Each neighbor’s brightness is compared against \(p\) with a configurable threshold; neighbors significantly brighter or darker contribute to a contiguous run.
-- If at least 12 consecutive neighbors satisfy the threshold in the same direction, \(p\) is classified as a corner.
+- If at least 12 consecutive neighbors satisfy the threshold in the same direction (brighter/darker), \(p\) is classified as a corner.
 
 To accelerate this process:
 - High-priority positions (e.g., 1, 5, 9, 13 on the circle) are checked first; if they fail requirements, the pixel can be rejected early without loading all 16 neighbors.
@@ -111,8 +103,6 @@ To accelerate this process:
 FAST corner detection is built around a pixel iterator, a neighborhood buffer, and a decision engine:
 
 - **fastpixelpos.sv**  
-  - Inputs: `clk`, `nrst`, `currx`, `curry`, `SRAMin`, `start`.
-  - Outputs: `xaddr`, `yaddr`, `xaddr4`, `yaddr4`, `updatesample`, `writeSRAM4`.
   - Function:  
     - Walks the image grid in lockstep with the Gaussian pipeline using a shared snake-like addressing scheme.
     - Generates the addresses needed to read the center pixel and surrounding circle from SRAM.
@@ -145,7 +135,7 @@ This makes runtime proportional to the number of “corner-like” pixels rather
 
 ***
 
-## Top-Level Corner Detector & AHB Interface
+## Top-Level Corner Detector
 
 ### cornerdetector.sv (Top-Level ISP)
 
@@ -157,7 +147,7 @@ High-level responsibilities:
 - Orchestrates multi-line pipelining: FAST starts on a line only after Gaussian has fully processed the corresponding region (and, if configured, the required lookahead lines).
 
 Interfaces are partitioned as:[2]
-- **Image Params / AHB:** Address, data, and control signals for reading input and writing outputs through the memory map.
+- **Image Params:** Address, data, and control signals for reading input and writing outputs through the memory map.
 - **Image SRAM Input:** Coordinates (`xaddrimg`, `yaddrimg`), enables (`renimg`, `wenimg`), and data lines to the raw input buffer.
 - **Gaussian De-noised SRAM:** Similar interface for the intermediate blurred image.
 - **FAST Features SRAM:** Read/write interface for the binary corner map.
@@ -293,7 +283,7 @@ Fine-tuning the fixed-point format and normalization logic allows trading off ha
 ***
 
 <p align="center">
-  <!-- Performance / pipeline timing diagram and possible FPS targets -->
+  <img src="https://github.com/AaryanPanigrahi/Oriented-FAST-Corner-Detector-ISP/blob/main/documentation/images/DogPhotoCompare.png" width="700">
 </p>
 
 ***
@@ -314,8 +304,3 @@ This layered verification approach makes each module verifiable in isolation and
 <p align="center">
   <!-- Space for verification waveforms / side-by-side RTL vs Matlab screenshots -->
 </p>
-
-[1](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/83555559/609b187f-834e-48fd-92f2-cfa27d1447b6/ECE-337-CDL-Project-Outline.pdf)
-[2](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/83555559/03a9f937-23dd-4842-89bc-8a19704bf69c/FAST-ISP-Verification-Plan.pdf)
-[3](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/83555559/b127a5b5-bc1c-4db3-931f-aafccdeef315/ECE337-CDL-Demo-Slides.pdf)
-[4](https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/83555559/f2e96332-0f31-4d3f-9b3c-1f2c94ed6260/Readme.md)
